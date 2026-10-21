@@ -306,6 +306,12 @@ footer { padding: 10px 0 40px; color: var(--ink-3); font-size: 13px; }
   .scatters, .grid2, .duo { grid-template-columns: 1fr; }
 }
 @media (max-width: 1020px) { .ev-keys { grid-template-columns: 1fr 1fr; } .ev-eiffel { opacity: .12; } }
+@media (max-width: 860px) {
+  .topbar .wrap { row-gap: 0; }
+  .toggles { margin-left: auto; }
+  nav.pages { order: 3; flex: 1 0 100%; border-top: 1px solid rgba(255,255,255,.1); }
+  nav.pages a { padding: 13px 10px 11px; }
+}
 @media (max-width: 680px) {
   .ev-keys { grid-template-columns: 1fr; }
   .ev-score { gap: 8px; } .ev-hero { padding: 24px 16px 36px; }
