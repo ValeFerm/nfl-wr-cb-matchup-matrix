@@ -293,6 +293,8 @@ const CB = D.cb.slice().sort((a, b) => a.name.localeCompare(b.name));
 const byId = (arr, id) => arr.find(p => p.nflId === id);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ord = n => n + ([11, 12, 13].includes(n % 100) ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th"));
+const pv = p => p < 0.001 ? "p < 0.001" : "p = " + p.toFixed(p < 0.01 ? 3 : 2);
 const sgn = (v, d = 2) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d);
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const ROUTES = { cut: "outs, comebacks, digs, slants, curls", go: "go / fade, seam, deep post stem" };
@@ -337,7 +339,7 @@ const state = { wr: (WR.find(p => p.name === "Mike Evans") || WR[0]).nflId, cb: 
 function traitBar(label, sub, pct, color, foot) {
   return `<div><div class="trait-label"><b>${label}</b><span>${sub}</span></div>
     <div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div style="width:${pct}%;background:${color}"></div><span class="tick"></span></div>
-    <span class="pct">${pct}<small style="font-size:11px;color:var(--ink-3)">th</small></span></div>
+    <span class="pct">${pct}<small style="font-size:11px;color:var(--ink-3)">${ord(pct).replace(/^\d+/, "")}</small></span></div>
     <div class="trait-foot">${foot}</div></div>`;
 }
 function bio(p) {
@@ -525,7 +527,7 @@ function scatter(el, arr, sel, isWR) {
     const dot = e.target.closest(".dot"); if (!dot) return hideTip();
     const p = arr.find(q => q.nflId === +dot.dataset.id);
     showTip(e, `<b>${esc(p.name)}</b> <span class="m">${isWR ? "WR" : "CB"} · ${esc(p.team)}</span><br>${esc(p.archetype)}
-      <br><span class="m">${isWR ? "Burst" : "Burst allowed"}:</span> ${p.pct_burst}th pct · <span class="m">${isWR ? "Burn" : "Burn allowed"}:</span> ${p.pct_burn}th pct
+      <br><span class="m">${isWR ? "Burst" : "Burst allowed"}:</span> ${ord(p.pct_burst)} pct · <span class="m">${isWR ? "Burn" : "Burn allowed"}:</span> ${ord(p.pct_burn)} pct
       <br><span class="m">${p.n_cut} cuts · ${p.n_vert} verticals · click to load</span>`);
   };
   el.onmouseleave = hideTip;
@@ -542,10 +544,10 @@ function renderProof() {
   $("tiles").innerHTML = `
     <div class="card tile"><div class="big" style="color:var(--cut)">${pc(cw.completion)}% <small>vs ${pc(cl.completion)}%</small></div>
       <div class="cap">Completion on targeted <b>breaking routes</b> when the WR wins the break vs when he loses it.</div>
-      <div class="foot">Split at the median Burst · n = ${cw.n + cl.n} targets</div></div>
+      <div class="foot">Split at the median Burst · n = ${cw.n + cl.n} targets · ${pv(cw.p_value)}</div></div>
     <div class="card tile"><div class="big" style="color:var(--go)">${pc(vw.completion)}% <small>vs ${pc(vl.completion)}%</small></div>
       <div class="cap">Completion on targeted <b>verticals</b> when the WR burns the corner vs when he doesn't.</div>
-      <div class="foot">Split at the median Burn · n = ${vw.n + vl.n} targets</div></div>
+      <div class="foot">Split at the median Burn · n = ${vw.n + vl.n} targets · ${pv(vw.p_value)}${vw.p_value > 0.05 ? " (not significant: directional only)" : ""}</div></div>
     <div class="card tile"><div class="big">${pc(bins[0].mean)}% <small>→ ${pc(bins[bins.length - 1].mean)}%</small></div>
       <div class="cap">Completion with <b>under 1 yd</b> of separation at release vs <b>3+ yd</b>.</div>
       <div class="foot">n = ${bins.reduce((t, b) => t + b.size, 0)} targeted cut + vertical routes (of ${V.n_targeted} WR targets found)</div></div>`;

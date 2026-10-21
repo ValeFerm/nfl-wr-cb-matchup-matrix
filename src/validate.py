@@ -1,6 +1,7 @@
 """Validation football : la séparation créée se traduit-elle en passes complétées quand le WR est ciblé ?"""
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 
 TARGET_RE = r"pass (?:incomplete )?(?:short|deep) (?:left|middle|right) (?:to|intended for) (.{0,30})"
 
@@ -30,6 +31,12 @@ def completion_by_separation(tr):
     t["won"] = t["metric"] > t.groupby("family")["metric"].transform("median")
     out = t.groupby(["family", "won"]).agg(n=("complete", "size"), completion=("complete", "mean"),
                                            sep_throw=("sep_throw", "mean")).reset_index()
+    # Test bilatéral de différence de proportions (gagné vs perdu), par famille
+    g = out.pivot(index="family", columns="won", values=["n", "completion"])
+    n1, n0, p1, p0 = g[("n", True)], g[("n", False)], g[("completion", True)], g[("completion", False)]
+    pool = (p1 * n1 + p0 * n0) / (n1 + n0)
+    z = (p1 - p0) / np.sqrt(pool * (1 - pool) * (1 / n1 + 1 / n0))
+    out["p_value"] = out["family"].map(pd.Series(2 * norm.sf(np.abs(z)), index=z.index))
     sep_bins = pd.cut(t["sep_throw"], [0, 1, 2, 3, np.inf], labels=["<1 yd", "1-2 yd", "2-3 yd", "3+ yd"])
     by_sep = t.groupby(sep_bins, observed=True)["complete"].agg(["size", "mean"]).reset_index()
     return out, by_sep, t
