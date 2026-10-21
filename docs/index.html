@@ -4,17 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WR–CB Matchup Matrix</title>
-<meta name="description" content="Man-coverage scouting report: does a receiver win at the break (Burst) or with speed (Burn), and which route family should you call against this cornerback?">
+<meta name="description" content="Man-coverage decision tool for coaches: which route family to call, which corner to attack, which corner to assign, for a given down, distance and field position.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  // Thème avant le premier rendu (évite le flash) : choix mémorisé, sinon préférence système
+  try { const th = localStorage.getItem("mm-theme"); if (th) document.documentElement.dataset.theme = th; } catch (e) {}
+</script>
 <style>
 :root {
   color-scheme: light;
   --page: #f3f1eb; --surface: #fcfcfb; --surface-2: #f6f5f1; --line: #e4e3df; --line-2: #d3d1cb;
   --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #85847e;
-  --band: #0d1b2a; --band-ink: #f4f2ec; --band-ink-2: #a9b4c2; --flag: #c8102e;
-  --cut: #2a78d6; --cut-soft: #dbe8f8; --go: #eb6834; --go-soft: #fbe2d7; --neutral: #ecebe7;
+  --band: #0d1b2a; --band-ink: #f4f2ec; --band-ink-2: #a9b4c2; --flag: #c8102e; --gold: #b8963e;
+  --cut: #2a78d6; --go: #eb6834; --neutral: #ecebe7; --good: #1f8a4c;
   --shadow: 0 1px 2px rgba(13,27,42,.06), 0 4px 16px rgba(13,27,42,.06);
 }
 @media (prefers-color-scheme: dark) {
@@ -22,8 +26,8 @@
     color-scheme: dark;
     --page: #121211; --surface: #1a1a19; --surface-2: #222220; --line: #2e2e2b; --line-2: #3a3a37;
     --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
-    --band: #0a1420; --band-ink: #f0efec; --band-ink-2: #8fa0b3; --flag: #e5484d;
-    --cut: #3987e5; --cut-soft: #1d3150; --go: #d95926; --go-soft: #4a2617; --neutral: #2c2c29;
+    --band: #0a1420; --band-ink: #f0efec; --band-ink-2: #8fa0b3; --flag: #e5484d; --gold: #d4b25c;
+    --cut: #3987e5; --go: #d95926; --neutral: #2c2c29; --good: #3fae6c;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
   }
 }
@@ -31,196 +35,253 @@
   color-scheme: dark;
   --page: #121211; --surface: #1a1a19; --surface-2: #222220; --line: #2e2e2b; --line-2: #3a3a37;
   --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
-  --band: #0a1420; --band-ink: #f0efec; --band-ink-2: #8fa0b3; --flag: #e5484d;
-  --cut: #3987e5; --cut-soft: #1d3150; --go: #d95926; --go-soft: #4a2617; --neutral: #2c2c29;
+  --band: #0a1420; --band-ink: #f0efec; --band-ink-2: #8fa0b3; --flag: #e5484d; --gold: #d4b25c;
+  --cut: #3987e5; --go: #d95926; --neutral: #2c2c29; --good: #3fae6c;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif;
   font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
 .wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
-h1, h2, h3, .cond { font-family: Oswald, "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+h1, h2, h3 { font-family: Oswald, "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+a { color: inherit; }
 
-/* ---------- Header band ---------- */
-header.band { background: var(--band); color: var(--band-ink); position: relative; overflow: hidden; }
-header.band::before { content: ""; position: absolute; inset: 0; opacity: .07; pointer-events: none;
-  background: repeating-linear-gradient(90deg, #fff 0 2px, transparent 2px 64px); }
-header.band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--flag); }
-.band-inner { position: relative; padding: 28px 0 30px; }
-.kicker { font: 600 12px/1.2 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--band-ink-2); }
-.kicker b { color: var(--band-ink); }
-header h1 { font-size: clamp(34px, 6vw, 60px); line-height: 1; margin: 10px 0 10px; font-weight: 700; }
-header h1 span { color: var(--flag); }
-.lede { max-width: 760px; color: var(--band-ink-2); font-size: 16px; margin: 0; }
-.lede strong { color: var(--band-ink); }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.chip { border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--band-ink); }
-.chip b { font-weight: 700; }
-nav.toc { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
-nav.toc .wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
-nav.toc a { font: 600 13px/1 Oswald, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2);
-  text-decoration: none; padding: 14px 12px 12px; border-bottom: 3px solid transparent; white-space: nowrap; }
-nav.toc a:hover { color: var(--ink); border-color: var(--line-2); }
+/* ---------- Top bar ---------- */
+.topbar { background: var(--band); color: var(--band-ink); position: sticky; top: 0; z-index: 30; border-bottom: 3px solid var(--flag); }
+.topbar .wrap { display: flex; align-items: center; gap: 14px; min-height: 56px; flex-wrap: wrap; }
+.brand { font: 700 18px/1 Oswald, sans-serif; text-transform: uppercase; letter-spacing: .03em; text-decoration: none; white-space: nowrap; }
+.brand span { color: var(--flag); }
+nav.pages { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; }
+nav.pages a { font: 600 13px/1 Oswald, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--band-ink-2);
+  text-decoration: none; padding: 20px 10px 17px; border-bottom: 3px solid transparent; margin-bottom: -3px; white-space: nowrap; }
+nav.pages a:hover { color: var(--band-ink); }
+nav.pages a.on { color: var(--band-ink); border-bottom-color: var(--band-ink); }
+.toggles { display: flex; gap: 6px; }
+.tg { font: 600 12px/1 Inter, sans-serif; color: var(--band-ink); background: transparent; border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px; padding: 7px 11px; cursor: pointer; min-height: 32px; }
+.tg:hover { border-color: rgba(255,255,255,.6); }
+.tg b { color: var(--band-ink); } .tg span { color: var(--band-ink-2); }
 
-/* ---------- Sections ---------- */
-section { padding: 36px 0 8px; }
-.sec-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
-.sec-num { font: 700 14px/1 Oswald, sans-serif; color: var(--surface); background: var(--ink); padding: 4px 7px; border-radius: 4px; }
-h2 { font-size: 28px; margin: 0; font-weight: 600; }
-.sec-sub { color: var(--ink-2); margin: 6px 0 18px; max-width: 820px; }
+/* ---------- Page scaffolding ---------- */
+.page { display: none; padding: 26px 0 40px; }
+.page.on { display: block; }
+.ph { margin-bottom: 16px; }
+.ph h1 { font-size: clamp(28px, 4.5vw, 44px); line-height: 1.02; margin: 4px 0 6px; font-weight: 700; }
+.ph p { color: var(--ink-2); margin: 0; max-width: 860px; }
+.eyebrow { font: 600 12px/1.2 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 16px; }
-.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 220px; max-width: 320px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 200px; max-width: 320px; }
+.field.sm { flex: 0 1 130px; }
 .field label { font: 600 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
-select, button { font: 500 15px Inter, sans-serif; color: var(--ink); background: var(--surface); border: 1px solid var(--line-2);
-  border-radius: 8px; padding: 9px 10px; min-height: 40px; }
+select, button.btn { font: 500 15px Inter, sans-serif; color: var(--ink); background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: 8px; padding: 8px 10px; min-height: 40px; }
 select { width: 100%; }
-button { cursor: pointer; font-weight: 600; }
-button:hover { border-color: var(--ink-3); }
+button.btn { cursor: pointer; font-weight: 600; }
+button.btn:hover { border-color: var(--ink-3); }
 select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--cut); outline-offset: 2px; }
 
-/* ---------- Matchup lab ---------- */
-.lab { display: grid; grid-template-columns: 1fr 1.08fr 1fr; gap: 16px; align-items: stretch; }
-.player { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+/* ---------- Situation bar ---------- */
+.situation { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 12px 14px; margin-bottom: 16px; }
+.situation .tag { font: 700 13px/1 Oswald, sans-serif; letter-spacing: .08em; text-transform: uppercase; background: var(--ink); color: var(--surface);
+  border-radius: 6px; padding: 8px 10px; align-self: center; }
+.situation .sum { margin-left: auto; align-self: center; font-size: 13px; color: var(--ink-2); max-width: 320px; }
+.situation .sum b { color: var(--ink); }
+
+/* ---------- Home ---------- */
+.hero { background: var(--band); color: var(--band-ink); border-radius: 14px; padding: 26px 24px; position: relative; overflow: hidden; margin-bottom: 16px; }
+.hero::before { content: ""; position: absolute; inset: 0; opacity: .07; pointer-events: none;
+  background: repeating-linear-gradient(90deg, #fff 0 2px, transparent 2px 64px); }
+.hero > * { position: relative; }
+.hero .eyebrow { color: var(--band-ink-2); }
+.hero h1 { font-size: clamp(30px, 5vw, 54px); margin: 8px 0; line-height: 1; }
+.hero h1 .no { color: var(--gold); } .hero h1 .pit { color: #ffb612; }
+.hero p { color: var(--band-ink-2); margin: 0; max-width: 820px; }
+.hero p b { color: var(--band-ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.chip { border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--band-ink); }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.side { padding: 18px; }
+.side h2 { font-size: 22px; margin: 0 0 2px; }
+.side .sub { color: var(--ink-2); font-size: 13.5px; margin: 0 0 12px; }
+.wr-block { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+.wr-block:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.wr-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.wr-head b { font: 700 18px Oswald, sans-serif; text-transform: uppercase; }
+.wr-head span { color: var(--ink-3); font-size: 12.5px; }
+.small-note { font-size: 12px; color: var(--ink-3); margin-top: 12px; }
+
+/* ---------- Ranked decision lists ---------- */
+.rank { display: flex; flex-direction: column; gap: 6px; }
+.rk { display: grid; grid-template-columns: 22px minmax(0, 1.25fr) 96px minmax(0, 1fr) 54px; gap: 10px; align-items: center;
+  padding: 8px 10px; border-radius: 8px; background: var(--surface-2); cursor: pointer; border: 1px solid transparent; }
+.rk:hover { border-color: var(--line-2); }
+.rk.best { background: color-mix(in oklab, var(--good) 12%, var(--surface)); border-color: color-mix(in oklab, var(--good) 45%, var(--surface)); }
+.rk .n { font: 700 14px Oswald, sans-serif; color: var(--ink-3); }
+.rk .who { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rk .who small { color: var(--ink-3); font-weight: 500; }
+.pill { font: 700 12px/1 Oswald, sans-serif; letter-spacing: .04em; text-align: center; padding: 6px 4px; border-radius: 5px; color: #fff; white-space: nowrap; }
+.pill.cut { background: var(--cut); } .pill.go { background: var(--go); }
+.meter { height: 8px; background: var(--neutral); border-radius: 4px; position: relative; }
+.meter > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--ink); }
+.rk .val { font: 700 15px Oswald, sans-serif; text-align: right; }
+.rk-cap { display: grid; grid-template-columns: 22px minmax(0, 1.25fr) 96px minmax(0, 1fr) 54px; gap: 10px; font-size: 10.5px;
+  color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px 4px; }
+
+/* ---------- Lab ---------- */
+.lab { display: grid; grid-template-columns: 1fr 1.12fr 1fr; gap: 16px; align-items: stretch; }
+.player { overflow: hidden; display: flex; flex-direction: column; }
 .p-top { display: flex; gap: 14px; align-items: center; padding: 16px 18px 14px; border-bottom: 1px solid var(--line); }
-.jersey { font: 700 34px/1 Oswald, sans-serif; width: 64px; height: 64px; flex: none; display: grid; place-items: center;
+.jersey { font: 700 32px/1 Oswald, sans-serif; width: 62px; height: 62px; flex: none; display: grid; place-items: center;
   border-radius: 10px; background: var(--band); color: var(--band-ink); }
-.p-name { font: 700 24px/1.05 Oswald, sans-serif; text-transform: uppercase; margin: 0; }
+.p-name { font: 700 23px/1.05 Oswald, sans-serif; text-transform: uppercase; margin: 0; }
 .p-meta { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
 .p-pos { font-weight: 700; color: var(--ink); }
-.badge { display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 Inter, sans-serif; letter-spacing: .06em;
-  text-transform: uppercase; padding: 6px 10px; border-radius: 999px; margin-top: 8px; }
+.forty { display: inline-flex; align-items: baseline; gap: 6px; margin-top: 6px; margin-right: 6px; font-size: 12px; color: var(--ink-2);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+.forty b { font: 700 15px Oswald, sans-serif; color: var(--ink); }
+.badge { display: inline-flex; align-items: center; gap: 6px; font: 600 11.5px/1 Inter, sans-serif; letter-spacing: .06em;
+  text-transform: uppercase; padding: 6px 10px; border-radius: 999px; margin-top: 6px; }
 .badge i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.limited { font-size: 11px; color: var(--ink-3); border: 1px dashed var(--line-2); border-radius: 999px; padding: 3px 8px; margin-left: 4px; }
 .p-body { padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
 .trait-label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
 .trait-label b { font: 600 13px Oswald, sans-serif; letter-spacing: .05em; text-transform: uppercase; }
-.trait-label span { color: var(--ink-2); }
-.bar { position: relative; height: 10px; background: var(--neutral); border-radius: 5px; margin-top: 6px; }
+.trait-label span { color: var(--ink-2); text-align: right; }
+.bar { position: relative; height: 10px; background: var(--neutral); border-radius: 5px; }
 .bar > div { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; transition: width .35s ease; }
 .bar .tick { position: absolute; top: -3px; bottom: -3px; width: 2px; left: 50%; background: var(--surface); }
 .trait-foot { font-size: 12px; color: var(--ink-3); margin-top: 5px; }
-.pct { font: 700 20px/1 Oswald, sans-serif; color: var(--ink); }
-.tree-wrap { border-top: 1px dashed var(--line-2); padding-top: 10px; }
-.mini-legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); margin-top: 4px; flex-wrap: wrap; }
-.mini-legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.pct { font: 700 20px/1 Oswald, sans-serif; color: var(--ink); white-space: nowrap; }
+.pct small { font-size: 11px; color: var(--ink-3); }
 .scout-note { font-size: 13.5px; color: var(--ink-2); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; margin: 0; }
 .scout-note b { color: var(--ink); }
+.mini-legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); margin-top: 6px; flex-wrap: wrap; }
+.mini-legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.turf { border-radius: 8px; overflow: hidden; margin-top: 6px; }
 
 .verdict { padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 14px; border-top: 6px solid var(--cut); }
 .verdict.go { border-top-color: var(--go); }
-.v-kicker { font: 600 12px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-.v-call { font: 700 clamp(30px, 4vw, 44px)/1 Oswald, sans-serif; text-transform: uppercase; margin: 2px 0 0; color: var(--cut); }
+.v-call { font: 700 clamp(30px, 4vw, 42px)/1 Oswald, sans-serif; text-transform: uppercase; margin: 2px 0 0; color: var(--cut); }
 .verdict.go .v-call { color: var(--go); }
-.v-routes { color: var(--ink-2); font-size: 14px; margin: 0; }
-.conf { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2); }
-.conf .dots { display: inline-flex; gap: 3px; }
-.conf .dots i { width: 18px; height: 6px; border-radius: 3px; background: var(--neutral); }
-.conf .dots i.on { background: var(--ink); }
-.edge-row { display: grid; grid-template-columns: 112px 1fr 64px; gap: 10px; align-items: center; font-size: 13px; }
-.edge-row .lbl { font: 600 13px Oswald, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
-.edge-track { position: relative; height: 22px; background: var(--surface-2); border-radius: 4px; }
-.edge-track .zero { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; background: var(--ink-3); }
-.edge-track .fill { position: absolute; top: 4px; bottom: 4px; border-radius: 4px; transition: all .35s ease; }
-.edge-val { text-align: right; font-weight: 700; }
-.edge-axis { display: grid; grid-template-columns: 112px 1fr 64px; gap: 10px; font-size: 11px; color: var(--ink-3); }
-.edge-axis div:nth-child(2) { display: flex; justify-content: space-between; }
-.expect { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.stat { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
-.stat .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
-.stat .v { font: 700 24px/1.1 Oswald, sans-serif; margin-top: 4px; }
-.stat .s { font-size: 12px; color: var(--ink-2); }
+.v-routes { color: var(--ink-2); font-size: 14px; margin: 2px 0 0; }
+.split { display: flex; height: 34px; border-radius: 8px; overflow: hidden; font: 700 14px/34px Oswald, sans-serif; letter-spacing: .04em; }
+.split div { color: #fff; padding: 0 10px; white-space: nowrap; transition: width .35s ease; min-width: 0; overflow: hidden; }
+.split .c { background: var(--cut); } .split .g { background: var(--go); text-align: right; }
+.split-cap { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+table.cmp { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.cmp th, .cmp td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+.cmp th:first-child, .cmp td:first-child { text-align: left; color: var(--ink-2); font-weight: 500; }
+.cmp thead th { font: 600 12px Oswald, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.cmp thead th.c { color: var(--cut); } .cmp thead th.g { color: var(--go); }
+.cmp td.win { font-weight: 700; color: var(--ink); }
+.cmp tr.obj td { background: var(--surface-2); }
+.cmp tr.obj td:first-child { color: var(--ink); font-weight: 700; }
 
 /* ---------- Board ---------- */
 .board-wrap { overflow-x: auto; padding: 14px; }
-table.board { border-collapse: separate; border-spacing: 2px; margin: 0 auto; }
+table.board { border-collapse: separate; border-spacing: 3px; margin: 0 auto; }
 .board th { font: 500 12px/1.2 Inter, sans-serif; color: var(--ink-2); white-space: nowrap; }
-.board thead th { height: 120px; vertical-align: bottom; padding: 0 0 6px; }
-.board thead th div { writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; margin: 0 auto; }
-.board tbody th { text-align: right; padding-right: 8px; }
-.board th small { color: var(--ink-3); }
-.board td { width: 52px; min-width: 52px; height: 34px; text-align: center; border-radius: 4px; cursor: pointer;
-  font: 600 11px/1 Oswald, sans-serif; letter-spacing: .04em; color: var(--ink); transition: transform .1s ease; }
-.board td:hover { outline: 2px solid var(--ink); transform: scale(1.06); }
-.board td.strong { font-weight: 700; font-size: 12.5px; }
-.board td.sel { outline: 3px solid var(--ink); }
-.board-legend { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 12px; color: var(--ink-2);
-  padding: 4px 14px 14px; flex-wrap: wrap; }
-.grad { width: 220px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--go), var(--neutral), var(--cut)); }
-.empty { padding: 30px; text-align: center; color: var(--ink-2); }
+.board thead th { vertical-align: bottom; padding: 0 0 6px; font-weight: 600; color: var(--ink); }
+.board tbody th { text-align: right; padding-right: 8px; font-weight: 600; color: var(--ink); }
+.board th small { color: var(--ink-3); font-weight: 500; }
+.board td { min-width: 92px; height: 50px; text-align: center; border-radius: 6px; cursor: pointer; color: var(--ink); line-height: 1.15; padding: 4px 6px; }
+.board td b { font: 700 14px Oswald, sans-serif; letter-spacing: .05em; display: block; }
+.board td span { font-size: 11.5px; }
+.board td:hover { outline: 2px solid var(--ink); }
+.board td.pick { box-shadow: inset 0 0 0 3px var(--good); }
+.board-legend { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 12px; color: var(--ink-2); padding: 0 14px 14px; flex-wrap: wrap; }
+.grad { width: 200px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--go), var(--neutral), var(--cut)); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.panel { padding: 18px; }
+.panel h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+.panel > p { margin: 0 0 12px; color: var(--ink-2); font-size: 13.5px; }
+.empty { padding: 26px; text-align: center; color: var(--ink-2); }
 
-/* ---------- Landscape ---------- */
+/* ---------- Landscape / proof / method ---------- */
 .scatters { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .scatter { padding: 16px 16px 8px; }
 .scatter h3 { margin: 0; font-size: 18px; font-weight: 600; }
 .scatter p { margin: 2px 0 6px; font-size: 13px; color: var(--ink-2); }
 svg text { font-family: Inter, sans-serif; }
-.dot { cursor: pointer; transition: r .15s ease; }
-.dot:hover { r: 8; }
-
-/* ---------- Validation ---------- */
+.dot { cursor: pointer; }
 .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .tile { padding: 18px; }
 .tile .big { font: 700 44px/1 Oswald, sans-serif; }
 .tile .big small { font-size: 22px; color: var(--ink-3); font-weight: 600; }
 .tile .cap { color: var(--ink-2); font-size: 14px; margin-top: 8px; }
 .tile .foot { color: var(--ink-3); font-size: 12px; margin-top: 8px; }
-.val-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 16px; }
-.panel { padding: 18px; }
-.panel h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
-.panel p { margin: 0 0 10px; color: var(--ink-2); font-size: 13.5px; }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.stat .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+.stat .v { font: 700 24px/1.1 Oswald, sans-serif; margin-top: 4px; }
+.stat .s { font-size: 12px; color: var(--ink-2); }
+.expect { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .method ol { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 14px; }
-.method li { margin-bottom: 8px; }
+.method li { margin-bottom: 9px; }
 .method li b { color: var(--ink); }
-footer { padding: 34px 0 40px; color: var(--ink-3); font-size: 13px; }
-footer a { color: var(--ink-2); }
+footer { padding: 10px 0 40px; color: var(--ink-3); font-size: 13px; }
 
 #tip { position: fixed; z-index: 50; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line-2);
-  border-radius: 8px; padding: 9px 11px; font-size: 12.5px; line-height: 1.45; box-shadow: var(--shadow); max-width: 280px; opacity: 0;
-  transition: opacity .12s ease; }
+  border-radius: 8px; padding: 9px 11px; font-size: 12.5px; line-height: 1.45; box-shadow: var(--shadow); max-width: 300px; opacity: 0; transition: opacity .12s ease; }
 #tip b { font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: .03em; font-size: 14px; }
 #tip .m { color: var(--ink-2); }
 
 @media (max-width: 1020px) {
   .lab { grid-template-columns: 1fr 1fr; }
   .verdict { grid-column: 1 / -1; order: -1; }
-  .scatters, .val-grid { grid-template-columns: 1fr; }
+  .scatters, .grid2, .duo { grid-template-columns: 1fr; }
 }
 @media (max-width: 680px) {
-  .lab, .tiles { grid-template-columns: 1fr; }
-  .field { max-width: none; }
-  .expect { grid-template-columns: 1fr; }
-  .edge-row, .edge-axis { grid-template-columns: 90px 1fr 54px; }
+  .lab, .tiles, .expect { grid-template-columns: 1fr; }
+  .field, .field.sm { max-width: none; flex: 1 1 140px; }
+  .situation .sum { margin-left: 0; max-width: none; }
+  .rk, .rk-cap { grid-template-columns: 18px minmax(0, 1fr) 88px 46px; }
+  .rk .meter, .rk-cap .mcol { display: none; }
+  .brand { font-size: 16px; }
 }
 </style>
 </head>
 <body>
-<header class="band">
-  <div class="wrap band-inner">
-    <div class="kicker"><b>NFL Big Data Bowl · Paris Side Quest</b> &nbsp;·&nbsp; Man-coverage scouting report &nbsp;·&nbsp; 2021 Weeks 1–8</div>
-    <h1>WR<span>–</span>CB Matchup Matrix</h1>
-    <p class="lede">Receivers don't all beat man coverage the same way. <strong>Burst</strong> = separation won at the break.
-      <strong>Burn</strong> = ground won on the corner at full speed. Cornerbacks leak one or the other.
-      Pick a receiver and a corner, and the report tells you <strong>which route family to call</strong>.</p>
-    <div class="chips" id="chips"></div>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#home">WR<span>–</span>CB Matchup Matrix</a>
+    <nav class="pages" aria-label="Pages">
+      <a href="#home" data-i18n="nav_home"></a><a href="#lab" data-i18n="nav_lab"></a><a href="#plan" data-i18n="nav_plan"></a>
+      <a href="#landscape" data-i18n="nav_land"></a><a href="#proof" data-i18n="nav_proof"></a><a href="#method" data-i18n="nav_method"></a>
+    </nav>
+    <div class="toggles">
+      <button class="tg" id="tgLang" type="button" aria-label="Language"></button>
+      <button class="tg" id="tgTheme" type="button" aria-label="Theme"></button>
+    </div>
   </div>
 </header>
-<nav class="toc" aria-label="Sections">
-  <div class="wrap">
-    <a href="#lab">1 · Matchup Lab</a><a href="#board">2 · Game-Plan Board</a><a href="#landscape">3 · Player Landscape</a>
-    <a href="#proof">4 · Does it win?</a><a href="#method">5 · Method &amp; limits</a>
-  </div>
-</nav>
 
 <main class="wrap">
-  <section id="lab">
-    <div class="sec-head"><span class="sec-num">01</span><h2>Matchup Lab</h2></div>
-    <p class="sec-sub">One receiver, one corner, one call. Profiles are opponent-adjusted: a WR's Burst is corrected for the corners he faced, and vice versa.</p>
-    <div class="controls">
-      <div class="field"><label for="selWR">Wide receiver</label><select id="selWR"></select></div>
-      <div class="field"><label for="selCB">Cornerback (in man)</label><select id="selCB"></select></div>
-      <button id="btnRandom" type="button">↻ Random matchup</button>
+  <!-- ============ HOME ============ -->
+  <section class="page" id="page-home">
+    <div class="hero">
+      <div class="eyebrow" data-i18n="home_eyebrow"></div>
+      <h1><span class="no">Saints</span> vs <span class="pit">Steelers</span> · Paris</h1>
+      <p data-i18n-html="home_lede"></p>
+      <div class="chips" id="chips"></div>
     </div>
+    <div class="card situation" data-sit></div>
+    <div class="duo">
+      <div class="card side" id="homeNO"></div>
+      <div class="card side" id="homePIT"></div>
+    </div>
+    <p class="small-note" data-i18n="home_note"></p>
+  </section>
+
+  <!-- ============ LAB ============ -->
+  <section class="page" id="page-lab">
+    <div class="ph"><div class="eyebrow" data-i18n="lab_eyebrow"></div><h1 data-i18n="nav_lab"></h1><p data-i18n="lab_sub"></p></div>
+    <div class="controls">
+      <div class="field"><label for="selWR" data-i18n="wr"></label><select id="selWR"></select></div>
+      <div class="field"><label for="selCB" data-i18n="cb"></label><select id="selCB"></select></div>
+      <button class="btn" id="btnSwap" type="button" data-i18n="random"></button>
+    </div>
+    <div class="card situation" data-sit></div>
     <div class="lab">
       <article class="card player" id="cardWR"></article>
       <article class="card verdict" id="verdict" aria-live="polite"></article>
@@ -228,366 +289,557 @@ footer a { color: var(--ink-2); }
     </div>
   </section>
 
-  <section id="board">
-    <div class="sec-head"><span class="sec-num">02</span><h2>Game-Plan Board</h2></div>
-    <p class="sec-sub">Your receivers against their corners. Each cell is the call for that duel; color intensity is how lopsided the edge is. Click a cell to open it in the Matchup Lab.</p>
+  <!-- ============ GAME PLAN ============ -->
+  <section class="page" id="page-plan">
+    <div class="ph"><div class="eyebrow" data-i18n="plan_eyebrow"></div><h1 data-i18n="nav_plan"></h1><p data-i18n="plan_sub"></p></div>
     <div class="controls">
-      <div class="field"><label for="selOff">Your offense</label><select id="selOff"></select></div>
-      <div class="field"><label for="selDef">Opponent defense</label><select id="selDef"></select></div>
+      <div class="field"><label for="selOff" data-i18n="your_off"></label><select id="selOff"></select></div>
+      <div class="field"><label for="selDef" data-i18n="opp_def"></label><select id="selDef"></select></div>
     </div>
-    <div class="card">
-      <div class="board-wrap" id="boardWrap"></div>
-      <div class="board-legend"><span>Call verticals (GO)</span><span class="grad"></span><span>Call breaking routes (CUT)</span>
-        <span>· Bold = strong edge</span></div>
+    <div class="card situation" data-sit></div>
+    <div class="card"><div class="board-wrap" id="boardWrap"></div>
+      <div class="board-legend"><span data-i18n="leg_go"></span><span class="grad"></span><span data-i18n="leg_cut"></span><span data-i18n="leg_pick"></span></div></div>
+    <div class="grid2">
+      <div class="card panel"><h3 data-i18n="att_title"></h3><p data-i18n="att_sub"></p><div id="attackList"></div></div>
+      <div class="card panel"><h3 data-i18n="def_title"></h3><p data-i18n="def_sub"></p><div id="assignList"></div></div>
     </div>
   </section>
 
-  <section id="landscape">
-    <div class="sec-head"><span class="sec-num">03</span><h2>Player Landscape</h2></div>
-    <p class="sec-sub">Every profiled player, placed by how he wins (WR) or where he leaks (CB). Axes are z-scores among profiled players; click a dot to load him in the lab.</p>
+  <!-- ============ LANDSCAPE ============ -->
+  <section class="page" id="page-landscape">
+    <div class="ph"><div class="eyebrow" data-i18n="land_eyebrow"></div><h1 data-i18n="nav_land"></h1><p data-i18n="land_sub"></p></div>
     <div class="scatters">
-      <div class="card scatter"><h3>Receivers · how they win</h3><p>Up = wins at the break · Right = wins with speed</p><div id="scWR"></div></div>
-      <div class="card scatter"><h3>Corners · where they leak</h3><p>Up = beaten on breaks · Right = beaten over the top</p><div id="scCB"></div></div>
+      <div class="card scatter"><h3 data-i18n="sc_wr"></h3><p data-i18n="sc_wr_sub"></p><div id="scWR"></div></div>
+      <div class="card scatter"><h3 data-i18n="sc_cb"></h3><p data-i18n="sc_cb_sub"></p><div id="scCB"></div></div>
     </div>
   </section>
 
-  <section id="proof">
-    <div class="sec-head"><span class="sec-num">04</span><h2>Does it win?</h2></div>
-    <p class="sec-sub">The metrics only matter if they turn into catches. We matched each throw to its intended receiver (play-by-play text) and looked at what happened.</p>
+  <!-- ============ PROOF ============ -->
+  <section class="page" id="page-proof">
+    <div class="ph"><div class="eyebrow" data-i18n="proof_eyebrow"></div><h1 data-i18n="nav_proof"></h1><p data-i18n="proof_sub"></p></div>
     <div class="tiles" id="tiles"></div>
-    <div class="val-grid">
-      <div class="card panel"><h3>Separation at release → completion</h3><p>Targeted cut and vertical routes in man coverage, by WR–CB distance when the ball leaves the QB's hand.</p><div id="sepChart"></div></div>
-      <div class="card panel"><h3>Is it a skill or luck?</h3><p>Out-of-sample test: profiles fitted on odd games, used to predict every route of the even games (and vice versa).</p><div id="modelStats"></div></div>
+    <div class="grid2">
+      <div class="card panel"><h3 data-i18n="sep_title"></h3><p data-i18n="sep_sub"></p><div id="sepChart"></div></div>
+      <div class="card panel"><h3 data-i18n="skill_title"></h3><p data-i18n="skill_sub"></p><div id="modelStats"></div></div>
     </div>
   </section>
 
-  <section id="method" class="method">
-    <div class="sec-head"><span class="sec-num">05</span><h2>Method &amp; limits</h2></div>
-    <div class="card panel" style="margin-top:14px">
-      <ol>
-        <li><b>Man coverage only</b> (PFF: Cover-0, Cover-1, 2-Man). Zone coverage distorts distances without a real one-on-one duel.</li>
-        <li><b>Who covers whom is inferred</b>, not given: each route runner (WR/TE/RB) is paired with the coverage defender that is <i>mutually</i> closest over the first second after the snap, then kept only if that defender stays the closest for ≥ 70% of frames until the throw (≤ 8 yd on average). We keep the WR vs CB duels.</li>
-        <li><b>Field normalized</b>: plays going left are rotated 180° (x, y, direction, orientation), so every offense attacks toward the same end zone.</li>
-        <li><b>Cut</b> = direction of travel turns ≥ 40° and the body turns ≥ 25° within 0.8 s, at ≥ 2 yd/s, ≥ 2 yd past the line, with the whole window ending <i>before</i> the throw. <b>Burst</b> = change in WR–CB distance over that window.</li>
-        <li><b>Vertical</b> = no cut, ≥ 7 yd deep at the throw, within 30° of straight downfield. <b>Burn</b> = yards per second the WR gains on the CB downfield while running straight at ≥ 5 yd/s (raw distance would shrink as the WR eats an off-corner's cushion, even when he is winning).</li>
-        <li><b>Opponent-adjusted profiles</b>: ridge regression route = league mean + WR effect + CB effect, penalty chosen by cross-validation across games. Players need ≥ 15 cut + vertical reps (≥ 5 of each).</li>
-        <li><b>The call</b> compares expected edges in route standard deviations: (WR effect + CB effect) / spread of that metric. A noisy CB effect is shrunk toward zero, so it weighs less.</li>
-        <li><b>Limits</b>: 8 weeks of data, so individual profiles are scouting signals, not certainties; route families are geometric (no route labels in the data); targets are parsed from play-by-play text.</li>
-      </ol>
-    </div>
+  <!-- ============ METHOD ============ -->
+  <section class="page method" id="page-method">
+    <div class="ph"><div class="eyebrow" data-i18n="method_eyebrow"></div><h1 data-i18n="nav_method"></h1></div>
+    <div class="card panel"><ol id="methodList"></ol></div>
   </section>
 </main>
-<footer class="wrap">
-  Data: NFL Next Gen Stats tracking + PFF scouting (NFL Big Data Bowl 2023 set, 122 games). Built in 3 hours for the AWS × NFL Paris Side Quest.
-  Code: <a href="https://github.com/ValeFerm/nfl-wr-cb-matchup-matrix">github.com/ValeFerm/nfl-wr-cb-matchup-matrix</a>
-</footer>
+<footer class="wrap" data-i18n-html="footer"></footer>
 <div id="tip" role="tooltip"></div>
 
 <script src="data.js"></script>
 <script>
 "use strict";
-const D = window.DATA;
-const FIT = D.fit;
-const WR = D.wr.slice().sort((a, b) => a.name.localeCompare(b.name));
-const CB = D.cb.slice().sort((a, b) => a.name.localeCompare(b.name));
+const D = window.DATA, FIT = D.fit, CMP = D.completion, SIT = D.situation, B = D.meta.n_boot;
+const WR = D.wr.slice().sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
+const CB = D.cb.slice().sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
 const byId = (arr, id) => arr.find(p => p.nflId === id);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const ord = n => n + ([11, 12, 13].includes(n % 100) ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th"));
-const pv = p => p < 0.001 ? "p < 0.001" : "p = " + p.toFixed(p < 0.01 ? 3 : 2);
-const sgn = (v, d = 2) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d);
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const ROUTES = { cut: "outs, comebacks, digs, slants, curls", go: "go / fade, seam, deep post stem" };
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+// ======================= i18n =======================
+const I18N = {
+  en: {
+    nav_home: "Paris 2026", nav_lab: "Matchup Lab", nav_plan: "Game Plan", nav_land: "Player Landscape", nav_proof: "Does it win?", nav_method: "Method",
+    home_eyebrow: "NFL Big Data Bowl · Paris Side Quest · Man-coverage decision tool",
+    home_lede: "Who should the offense attack, with which routes, and who should the defense put on whom? Every number below is a <b>probability</b> computed from Next Gen Stats tracking for the <b>situation you set</b>.",
+    home_note: "Players and teams as of 2021 Weeks 1–8 (the tracking data provided). Rosters change: the method, not the names, is what carries to 2026. Click any row to open the duel in the Matchup Lab.",
+    no_off: "Saints offense", pit_off: "Steelers offense", vs_corners: "vs the {t} corners", attack_with: "Who to attack, and how",
+    assign_title: "{t} defense: who shadows him?", lab_eyebrow: "One receiver · one corner · one call",
+    lab_sub: "Set the situation, pick a receiver and a corner: the call, its probability of success and how confident the model is update instantly.",
+    plan_eyebrow: "Full game plan", plan_sub: "Your receivers against their corners, for the situation you set. Each cell shows the best call, its success probability and the share of simulations backing it; the green frame is the corner to attack for that receiver.",
+    land_eyebrow: "League view", land_sub: "Every player placed by how he wins (WR) or where he leaks (CB). Z-scores among players shown; hollow dots = limited sample. Click a dot to open him in the lab.",
+    proof_eyebrow: "Validation", proof_sub: "The metrics only matter if they turn into catches. Each throw was matched to its intended receiver (play-by-play text).",
+    method_eyebrow: "How it works · assumptions · limits",
+    wr: "Wide receiver", cb: "Cornerback (in man)", random: "↻ Random matchup", your_off: "Your offense", opp_def: "Opponent defense",
+    sit: "Situation", down: "Down", togo: "Yards to go", ball: "Ball on", objective: "Optimize", obj_auto: "Auto", obj_cmp: "Completion %", obj_conv: "1st-down %", obj_yds: "Expected yards",
+    own: "own", opp: "opp.", sum_auto: "On {d} down the tool maximizes <b>{o}</b>.", sum_manual: "The tool maximizes <b>{o}</b>.",
+    downs: ["1st", "2nd", "3rd", "4th"],
+    call_cut: "Break it off", call_go: "Go vertical", routes_cut: "outs, comebacks, digs, slants, curls", routes_go: "go / fade, seam, deep post stem",
+    the_call: "The call", split_cap: "Share of {b} simulations (games resampled, model refit) in which each call is the better one",
+    row_cmp: "Completion probability", row_conv: "1st-down probability", row_yds: "Expected yards", row_int: "INT risk (league, man)", row_metric: "Expected Burst (yd) · Burn (yd/s)",
+    col_cut: "CUT", col_go: "GO", conf: ["Toss-up", "Lean", "Confident", "Strong"],
+    why_cut: "{w} vs {c}: breaking routes are the better call in {p}% of simulations for this situation.", why_go: "{w} vs {c}: vertical routes are the better call in {p}% of simulations for this situation.",
+    burst: "Burst", burn: "Burn", wins_break: "wins at the break", wins_speed: "wins with speed", break_cov: "Break coverage", deep_cov: "Deep coverage",
+    mirrors: "mirrors cuts", carries: "carries speed", per_break: "yd per break (raw)", cuts: "cuts", verts: "verticals", gained_cb: "yd/s gained on the CB (raw)",
+    allows: "allows", allows_dn: "yd/s downfield (raw)", faced: "faced", forty: "40-yd", combine: "Combine", no_forty: "40-yd: not timed at Combine",
+    tree: "Route tree vs man", tree_sub: "snap → throw · yellow = line to gain", br_routes: "Breaking routes", vert_routes: "Verticals",
+    limited: "limited sample", how_attack: "How to attack him:", atk_cut: "make him change direction: breaking routes at the stem, double moves off the break.",
+    atk_go: "stress him vertically: go balls, seams, deep stems before the break.",
+    grades_note: "Grades are percentiles among the {n} corners shown (higher = tighter coverage).",
+    leg_go: "Call verticals (GO)", leg_cut: "Call breaking routes (CUT)", leg_pick: "· cell = call, success value · % of simulations backing the call · green frame = corner to attack",
+    att_title: "Offense: which corner to attack", att_sub: "For each of your receivers, the opposing corners ranked by success probability, with the % of simulations in which each is the best target.",
+    def_title: "Defense: who shadows whom", def_sub: "Flip the board: for each opposing receiver, your corners ranked by the success they allow (lower is better), with the % of simulations in which each is the best assignment.",
+    cap_target: "Target", cap_call: "Call · value", cap_best_long: "Best choice in % of simulations", cap_assign: "Assign",
+    no_players: "No profiled player for this selection.", all: "All",
+    sc_wr: "Receivers · how they win", sc_wr_sub: "Up = wins at the break · Right = wins with speed", sc_cb: "Corners · where they leak", sc_cb_sub: "Up = beaten on breaks · Right = beaten over the top",
+    q_wr: ["ROUTE TECHNICIANS", "COMPLETE THREATS", "SCHEME-DEPENDENT", "SPEED BURNERS"], q_cb: ["STIFF ON BREAKS", "EXPLOITABLE BOTH WAYS", "LOCKDOWN", "LACKS LONG SPEED"],
+    ax_wr_x: "Burn · wins with speed (z) →", ax_wr_y: "Burst · wins at the break (z) →", ax_cb_x: "Burn allowed · beaten over the top (z) →", ax_cb_y: "Burst allowed · beaten on breaks (z) →",
+    click_load: "click to load", inside: "← inside", outside: "outside →", yrs: "yrs",
+    t1: "Completion on targeted <b>breaking routes</b> when the WR wins the break vs when he loses it.", t2: "Completion on targeted <b>verticals</b> when the WR burns the corner vs when he doesn't.",
+    t3: "Completion with <b>under 1 yd</b> of separation at release vs <b>3+ yd</b>.", split_med_b: "Split at the median Burst", split_med_n: "Split at the median Burn",
+    targets: "targets", not_sig: "(not significant: directional only)", t3_foot: "n = {n} targeted cut + vertical routes",
+    sep_title: "Separation at release → completion", sep_sub: "Targeted cut and vertical routes in man coverage, by WR–CB distance when the ball leaves the QB's hand.",
+    skill_title: "Is it a skill or luck?", skill_sub: "Out-of-sample test: profiles fitted on odd games predict every route of the even games (and vice versa).",
+    oos: "out-of-sample R² vs league mean", skill_txt: "One route is noisy (a bad stem, a pick, a safety over the top), so a few percent of route-level variance is modest but real signal: knowing <b>who</b> runs the route and <b>who</b> covers it beats the league average on games the model never saw. That uncertainty is exactly what the simulation percentages express.",
+    arch: { "Route technician": "Route technician", "Speed burner": "Speed burner", "Complete threat": "Complete threat", "Scheme-dependent": "Scheme-dependent",
+      "Stiff on breaks": "Stiff on breaks", "Lacks long speed": "Lacks long speed", "Exploitable both ways": "Exploitable both ways", "Lockdown": "Lockdown" },
+    note: { "Route technician": "creates his space at the break: sharp, sudden, hard to mirror.", "Speed burner": "wins by running past the corner: eats the cushion and gets on top.",
+      "Complete threat": "beats man coverage both at the break and with straight-line speed.", "Scheme-dependent": "rarely wins his one-on-one outright: scheme him open (motion, stacks, rubs).",
+      "Stiff on breaks": "gives up space when the receiver snaps off his route, but carries speed downfield.", "Lacks long speed": "mirrors breaks well but gets run past on vertical routes.",
+      "Exploitable both ways": "leaks separation at the break and over the top.", "Lockdown": "holds up against both breaks and speed: target someone else." },
+    chips: ["games", "man-coverage dropbacks", "WR–CB duels tracked", "WR", "CB"],
+    method: [
+      "<b>Man coverage only</b> (PFF: Cover-0, Cover-1, 2-Man). Zone coverage distorts distances without a real one-on-one duel.",
+      "<b>Who covers whom is inferred</b>: each route runner (WR/TE/RB) is paired with the coverage defender that is <i>mutually</i> closest over the first second after the snap, kept only if that defender stays the closest for ≥ 70% of frames until the throw (≤ 8 yd on average). WR vs CB duels are kept.",
+      "<b>Field normalized</b>: plays going left are rotated 180° (x, y, direction, orientation), so every offense attacks the same end zone.",
+      "<b>Cut</b> = direction of travel turns ≥ 40° and the body turns ≥ 25° within 0.8 s, at ≥ 2 yd/s, ≥ 2 yd past the line, the whole window ending <i>before</i> the throw. <b>Burst</b> = change in WR–CB distance over that window.",
+      "<b>Vertical</b> = no cut, ≥ 7 yd deep at the throw, within 30° of straight downfield. <b>Burn</b> = yards per second the WR gains on the CB downfield while running straight at ≥ 5 yd/s.",
+      "<b>Opponent-adjusted profiles</b>: ridge regression route = league mean + WR effect + CB effect, penalty chosen by cross-validation across games. ≥ 15 cut + vertical reps (≥ 5 each) = profiled; ≥ 8 (≥ 3 each) = limited sample, shrunk harder toward average.",
+      "<b>Success probability</b>: a logistic model on targeted routes links Burst (cuts) and Burn (verticals) to completion, averaged over rep-to-rep noise around the matchup's expected value. 1st-down probability and expected yards add the league distribution of yards after a completed cut or vertical in man coverage, capped by the distance to the goal line.",
+      "<b>Simulation percentages</b>: games are resampled with replacement and the whole model refit {b} times. \"CUT 72%\" means breaking routes are the better call in 72% of those simulations; \"best in 64%\" means that corner is the best target (or assignment) in 64% of them.",
+      "<b>40-yard dash</b>: NFL Combine times from nflverse (public data), matched by name and college. Shown for context, not used by the model.",
+      "<b>Limits</b>: 8 weeks of data, 2021 rosters, geometric route families (no route labels in the data), targets parsed from play-by-play text, league-wide yard distributions (not player-specific)."
+    ],
+    footer: "Data: NFL Next Gen Stats tracking + PFF scouting (122 games, 2021 Weeks 1–8) · Combine times: nflverse. Built in 3 hours for the AWS × NFL Paris Side Quest. Code: <a href=\"https://github.com/ValeFerm/nfl-wr-cb-matchup-matrix\">github.com/ValeFerm/nfl-wr-cb-matchup-matrix</a>",
+    theme_light: "Light", theme_dark: "Dark"
+  },
+  fr: {
+    nav_home: "Paris 2026", nav_lab: "Labo de duel", nav_plan: "Plan de match", nav_land: "Panorama joueurs", nav_proof: "Ça gagne ?", nav_method: "Méthode",
+    home_eyebrow: "NFL Big Data Bowl · Paris Side Quest · Outil de décision en man coverage",
+    home_lede: "Qui l'attaque doit-elle viser, avec quels tracés, et qui la défense doit-elle mettre sur qui ? Chaque chiffre ci-dessous est une <b>probabilité</b> calculée à partir du tracking Next Gen Stats pour la <b>situation choisie</b>.",
+    home_note: "Joueurs et équipes de 2021, semaines 1 à 8 (données de tracking fournies). Les effectifs changent : c'est la méthode, pas les noms, qui vaut pour 2026. Cliquez sur une ligne pour ouvrir le duel dans le labo.",
+    no_off: "Attaque des Saints", pit_off: "Attaque des Steelers", vs_corners: "face aux corners des {t}", attack_with: "Qui attaquer, et comment",
+    assign_title: "Défense des {t} : qui le prend en man ?", lab_eyebrow: "Un receveur · un corner · un appel",
+    lab_sub: "Réglez la situation, choisissez un receveur et un corner : l'appel, sa probabilité de réussite et la confiance du modèle se mettent à jour instantanément.",
+    plan_eyebrow: "Plan de match complet", plan_sub: "Vos receveurs contre leurs corners, pour la situation choisie. Chaque case donne le meilleur appel, sa probabilité de réussite et la part des simulations qui le soutiennent ; le cadre vert indique le corner à attaquer pour ce receveur.",
+    land_eyebrow: "Vue ligue", land_sub: "Chaque joueur placé selon sa façon de gagner (WR) ou ses failles (CB). Z-scores parmi les joueurs affichés ; points creux = échantillon limité. Cliquez sur un point pour l'ouvrir dans le labo.",
+    proof_eyebrow: "Validation", proof_sub: "Les métriques ne comptent que si elles se transforment en réceptions. Chaque passe a été reliée à son receveur visé (texte du play-by-play).",
+    method_eyebrow: "Fonctionnement · hypothèses · limites",
+    wr: "Receveur (WR)", cb: "Cornerback (en man)", random: "↻ Duel au hasard", your_off: "Votre attaque", opp_def: "Défense adverse",
+    sit: "Situation", down: "Tentative", togo: "Yards à gagner", ball: "Ballon sur", objective: "Optimiser", obj_auto: "Auto", obj_cmp: "% de complétion", obj_conv: "% de 1er down", obj_yds: "Yards attendus",
+    own: "propres", opp: "adv.", sum_auto: "En {d} tentative, l'outil maximise <b>{o}</b>.", sum_manual: "L'outil maximise <b>{o}</b>.",
+    downs: ["1re", "2e", "3e", "4e"],
+    call_cut: "Casser le tracé", call_go: "Partir profond", routes_cut: "outs, comebacks, digs, slants, curls", routes_go: "go / fade, seam, post profond",
+    the_call: "L'appel", split_cap: "Part des {b} simulations (matchs rééchantillonnés, modèle réajusté) où chaque appel est le meilleur",
+    row_cmp: "Probabilité de complétion", row_conv: "Probabilité de 1er down", row_yds: "Yards attendus", row_int: "Risque d'INT (ligue, man)", row_metric: "Burst attendu (yd) · Burn (yd/s)",
+    col_cut: "CUT", col_go: "GO", conf: ["Indécis", "Léger avantage", "Confiant", "Très net"],
+    why_cut: "{w} contre {c} : les tracés cassés sont le meilleur appel dans {p} % des simulations pour cette situation.", why_go: "{w} contre {c} : les tracés verticaux sont le meilleur appel dans {p} % des simulations pour cette situation.",
+    burst: "Burst", burn: "Burn", wins_break: "gagne à la rupture", wins_speed: "gagne en vitesse", break_cov: "Couverture des cuts", deep_cov: "Couverture profonde",
+    mirrors: "suit les ruptures", carries: "tient la vitesse", per_break: "yd par rupture (brut)", cuts: "cuts", verts: "verticaux", gained_cb: "yd/s gagnés sur le CB (brut)",
+    allows: "concède", allows_dn: "yd/s vers l'avant (brut)", faced: "subis", forty: "40 yd", combine: "Combine", no_forty: "40 yd : non chronométré au Combine",
+    tree: "Arbre de tracés en man", tree_sub: "snap → lancer · jaune = ligne à atteindre", br_routes: "Tracés cassés", vert_routes: "Verticaux",
+    limited: "échantillon limité", how_attack: "Comment l'attaquer :", atk_cut: "le faire changer de direction : tracés cassés au sommet, double moves après la rupture.",
+    atk_go: "le mettre sous pression verticale : go, seams, tiges profondes avant la rupture.",
+    grades_note: "Notes en percentiles parmi les {n} corners affichés (plus haut = couverture plus serrée).",
+    leg_go: "Appeler du vertical (GO)", leg_cut: "Appeler des tracés cassés (CUT)", leg_pick: "· case = appel, valeur de réussite · % des simulations qui soutiennent l'appel · cadre vert = corner à attaquer",
+    att_title: "Attaque : quel corner attaquer", att_sub: "Pour chacun de vos receveurs, les corners adverses classés par probabilité de réussite, avec le % de simulations où chacun est la meilleure cible.",
+    def_title: "Défense : qui suit qui", def_sub: "Côté défense : pour chaque receveur adverse, vos corners classés par réussite concédée (plus bas = mieux), avec le % de simulations où chacun est la meilleure affectation.",
+    cap_target: "Cible", cap_call: "Appel · valeur", cap_best_long: "Meilleur choix dans % des simulations", cap_assign: "Affecter",
+    no_players: "Aucun joueur profilé pour cette sélection.", all: "Tous",
+    sc_wr: "Receveurs · comment ils gagnent", sc_wr_sub: "Haut = gagne à la rupture · Droite = gagne en vitesse", sc_cb: "Corners · où ils cèdent", sc_cb_sub: "Haut = battu sur les ruptures · Droite = battu en profondeur",
+    q_wr: ["TECHNICIENS DU TRACÉ", "MENACES COMPLÈTES", "DÉPENDANTS DU SCHÉMA", "SPÉCIALISTES VITESSE"], q_cb: ["RAIDE SUR LES RUPTURES", "EXPLOITABLE PARTOUT", "VERROU", "MANQUE DE VITESSE"],
+    ax_wr_x: "Burn · gagne en vitesse (z) →", ax_wr_y: "Burst · gagne à la rupture (z) →", ax_cb_x: "Burn concédé · battu en profondeur (z) →", ax_cb_y: "Burst concédé · battu sur les ruptures (z) →",
+    click_load: "cliquer pour charger", inside: "← intérieur", outside: "extérieur →", yrs: "ans",
+    t1: "Complétion sur les <b>tracés cassés</b> ciblés quand le WR gagne sa rupture, contre quand il la perd.", t2: "Complétion sur les <b>verticaux</b> ciblés quand le WR déborde le corner, contre quand il n'y arrive pas.",
+    t3: "Complétion avec <b>moins d'1 yd</b> de séparation au lancer, contre <b>3 yd et plus</b>.", split_med_b: "Coupure à la médiane du Burst", split_med_n: "Coupure à la médiane du Burn",
+    targets: "cibles", not_sig: "(non significatif : simple tendance)", t3_foot: "n = {n} routes cut + verticales ciblées",
+    sep_title: "Séparation au lancer → complétion", sep_sub: "Routes cut et verticales ciblées en man coverage, selon la distance WR–CB au moment où le ballon quitte la main du QB.",
+    skill_title: "Talent ou hasard ?", skill_sub: "Test hors échantillon : les profils ajustés sur les matchs impairs prédisent toutes les routes des matchs pairs (et inversement).",
+    oos: "R² hors échantillon vs moyenne ligue", skill_txt: "Une route isolée est bruitée (mauvaise tige, pick, safety au-dessus) : quelques pourcents de variance expliquée au niveau route, c'est un signal modeste mais réel. Savoir <b>qui</b> court la route et <b>qui</b> la couvre bat la moyenne ligue sur des matchs jamais vus. C'est exactement cette incertitude qu'expriment les pourcentages de simulation.",
+    arch: { "Route technician": "Technicien du tracé", "Speed burner": "Spécialiste de la vitesse", "Complete threat": "Menace complète", "Scheme-dependent": "Dépendant du schéma",
+      "Stiff on breaks": "Raide sur les ruptures", "Lacks long speed": "Manque de vitesse", "Exploitable both ways": "Exploitable partout", "Lockdown": "Verrou" },
+    note: { "Route technician": "crée son espace à la rupture : sec, soudain, difficile à suivre.", "Speed burner": "gagne en dépassant le corner : il mange le coussin et passe au-dessus.",
+      "Complete threat": "bat la man coverage à la rupture comme en ligne droite.", "Scheme-dependent": "gagne rarement son duel seul : à libérer par le schéma (motion, stacks, picks).",
+      "Stiff on breaks": "cède de l'espace quand le receveur casse son tracé, mais tient la vitesse en profondeur.", "Lacks long speed": "suit bien les ruptures mais se fait déborder sur les verticaux.",
+      "Exploitable both ways": "cède de la séparation à la rupture et en profondeur.", "Lockdown": "tient face aux ruptures comme à la vitesse : visez quelqu'un d'autre." },
+    chips: ["matchs", "dropbacks en man coverage", "duels WR–CB suivis", "WR", "CB"],
+    method: [
+      "<b>Man coverage uniquement</b> (PFF : Cover-0, Cover-1, 2-Man). La zone fausse les distances sans vrai duel individuel.",
+      "<b>Qui couvre qui est déduit</b> : chaque coureur de route (WR/TE/RB) est apparié au défenseur en couverture <i>mutuellement</i> le plus proche sur la 1re seconde après le snap, gardé seulement s'il reste le plus proche sur ≥ 70 % des frames jusqu'au lancer (≤ 8 yd en moyenne). On garde les duels WR contre CB.",
+      "<b>Terrain normalisé</b> : les actions vers la gauche pivotent de 180° (x, y, direction, orientation) ; toutes les attaques vont vers la même en-but.",
+      "<b>Cut</b> = la direction tourne de ≥ 40° et le corps de ≥ 25° en 0,8 s, à ≥ 2 yd/s, ≥ 2 yd au-delà de la ligne, fenêtre terminée <i>avant</i> le lancer. <b>Burst</b> = variation de la distance WR–CB sur cette fenêtre.",
+      "<b>Vertical</b> = pas de cut, ≥ 7 yd de profondeur au lancer, à moins de 30° de l'axe. <b>Burn</b> = yards par seconde gagnés vers l'avant sur le CB en ligne droite à ≥ 5 yd/s.",
+      "<b>Profils ajustés à l'adversaire</b> : régression ridge route = moyenne ligue + effet WR + effet CB, pénalité choisie par validation croisée sur les matchs. ≥ 15 tracés cut + vertical (≥ 5 de chaque) = profilé ; ≥ 8 (≥ 3 de chaque) = échantillon limité, plus fortement ramené vers la moyenne.",
+      "<b>Probabilité de réussite</b> : un modèle logistique sur les routes ciblées relie le Burst (cuts) et le Burn (verticaux) à la complétion, moyenné sur le bruit d'une répétition à l'autre. La probabilité de 1er down et les yards attendus ajoutent la distribution ligue des yards après une réception sur cut ou vertical en man, plafonnée par la distance à l'en-but.",
+      "<b>Pourcentages de simulation</b> : les matchs sont rééchantillonnés avec remise et tout le modèle réajusté {b} fois. « CUT 72 % » signifie que les tracés cassés sont le meilleur appel dans 72 % de ces simulations ; « meilleur dans 64 % » signifie que ce corner est la meilleure cible (ou affectation) dans 64 % d'entre elles.",
+      "<b>40 yards</b> : temps du Combine NFL issus de nflverse (données publiques), appariés par nom et université. Affichés pour le contexte, non utilisés par le modèle.",
+      "<b>Limites</b> : 8 semaines de données, effectifs 2021, familles de tracés géométriques (pas d'étiquettes de route dans les données), cibles extraites du texte du play-by-play, distributions de yards à l'échelle de la ligue (pas par joueur)."
+    ],
+    footer: "Données : tracking NFL Next Gen Stats + scouting PFF (122 matchs, 2021 semaines 1 à 8) · Temps du Combine : nflverse. Construit en 3 heures pour l'AWS × NFL Paris Side Quest. Code : <a href=\"https://github.com/ValeFerm/nfl-wr-cb-matchup-matrix\">github.com/ValeFerm/nfl-wr-cb-matchup-matrix</a>",
+    theme_light: "Clair", theme_dark: "Sombre"
+  }
+};
+let LANG = store.get("mm-lang") || ((navigator.language || "en").startsWith("fr") ? "fr" : "en");
+const t = (k, vars) => { let s = I18N[LANG][k] ?? I18N.en[k] ?? k; if (vars && typeof s === "string") for (const [a, b] of Object.entries(vars)) s = s.replaceAll("{" + a + "}", b); return s; };
+const num = (v, d = 1) => (LANG === "fr" ? v.toFixed(d).replace(".", ",") : v.toFixed(d));
+const pct = v => Math.round(v * 100) + (LANG === "fr" ? " %" : "%");
+const sgn = (v, d = 2) => (v >= 0 ? "+" : "−") + num(Math.abs(v), d);
+const ord = n => LANG === "fr" ? (n === 1 ? "er" : "e") : ([11, 12, 13].includes(n % 100) ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th"));
+
+// ======================= Decision engine =======================
+// Gauss–Hermite (N(0,1)) : probabilité logistique moyennée sur le bruit d'une répétition à l'autre
+const GH = [[-2.8570, 0.01126], [-1.3556, 0.22208], [0, 0.53333], [1.3556, 0.22208], [2.8570, 0.01126]];
+const FAM = { cut: { m: "burst", c: CMP.cut, s: SIT.cut, k: "cut" }, go: { m: "burn", c: CMP.vertical, s: SIT.vertical, k: "vertical" } };
+const sigm = z => 1 / (1 + Math.exp(-z));
+function pComplete(fam, metric, b) {  // b = tirage bootstrap (modèle de complétion réajusté), undefined = estimation
+  const F = FAM[fam], sd = FIT[F.m].route_sd, [b0, b1] = b === undefined ? [F.c.b0, F.c.b1] : SIT.draws.completion[F.k][b];
+  return GH.reduce((acc, [z, w]) => acc + w * sigm(b0 + b1 * (metric + sd * z)), 0);
+}
+const state = { down: 3, togo: 7, toGoal: 50, objective: "auto", wr: null, cb: null, off: "NO", def: "PIT" };
+const objectiveKey = () => state.objective !== "auto" ? state.objective : (state.down >= 3 ? "conv" : "yds");
+// Yards par famille (ligue, man) : P(gain ≥ yards à gagner | complétée) et E[min(gain, distance à l'en-but)]
+function yardStatsOf(ys) {
+  const need = Math.min(state.togo, state.toGoal);
+  return { conv: ys.filter(y => y >= need).length / ys.length, eyds: ys.reduce((a, y) => a + Math.min(y, state.toGoal), 0) / ys.length };
+}
+const ysCache = {};  // par situation : estimation + chaque tirage bootstrap (yards rééchantillonnés)
+function yardTable() {
+  const k = state.togo + "|" + state.toGoal;
+  if (!ysCache[k]) ysCache[k] = {
+    est: { cut: yardStatsOf(SIT.cut.yards), go: yardStatsOf(SIT.vertical.yards) },
+    draws: Array.from({ length: B }, (_, b) => ({ cut: yardStatsOf(SIT.draws.yards.cut[b]), go: yardStatsOf(SIT.draws.yards.vertical[b]) }))
+  };
+  return ysCache[k];
+}
+function outcome(fam, metric, ys, b) { const p = pComplete(fam, metric, b); return { cmp: p, conv: p * ys.conv, yds: p * ys.eyds }; }
+const mu = { cut: FIT.burst.mu, go: FIT.burn.mu };
+function drawVal(w, c, b, key) {  // valeur de l'objectif pour chaque appel, tirage bootstrap b (profils + modèles de résultat)
+  const ys = yardTable().draws[b];
+  return { cut: outcome("cut", mu.cut + w.draws.burst[b] + c.draws.burst[b], ys.cut, b)[key],
+           go: outcome("go", mu.go + w.draws.burn[b] + c.draws.burn[b], ys.go, b)[key] };
+}
+function evaluate(w, c) {
+  const ys = yardTable().est, key = objectiveKey();
+  const mC = mu.cut + w.burst + c.burst, mG = mu.go + w.burn + c.burn;
+  const res = { cut: outcome("cut", mC, ys.cut), go: outcome("go", mG, ys.go), mC, mG, key };
+  let cutWins = 0;
+  for (let b = 0; b < B; b++) { const v = drawVal(w, c, b, key); if (v.cut > v.go) cutWins++; }
+  res.shareCut = cutWins / B;
+  res.call = res.cut[key] >= res.go[key] ? "cut" : "go";
+  res.best = res[res.call][key];
+  const conf = Math.max(res.shareCut, 1 - res.shareCut);
+  res.conf = conf >= 0.9 ? 3 : conf >= 0.75 ? 2 : conf >= 0.6 ? 1 : 0;
+  return res;
+}
+// % de simulations où chaque corner est le meilleur choix (max pour l'attaque, min pour la défense)
+function pickRates(w, cbs, maximize) {
+  const key = objectiveKey(), wins = new Array(cbs.length).fill(0);
+  for (let b = 0; b < B; b++) {
+    let bi = 0, bv = maximize ? -Infinity : Infinity;
+    cbs.forEach((c, i) => { const v = drawVal(w, c, b, key), best = Math.max(v.cut, v.go); if (maximize ? best > bv : best < bv) { bv = best; bi = i; } });
+    wins[bi]++;
+  }
+  return wins.map(x => x / B);
+}
+const fmtObj = (key, v) => key === "yds" ? num(v, 1) + " yd" : pct(v);
+const objLabel = key => t({ cmp: "obj_cmp", conv: "obj_conv", yds: "obj_yds" }[key]);
+
+// ======================= Situation bar =======================
+function renderSituation() {
+  const downs = t("downs");
+  const ballOpts = [[80, `${t("own")} 20`], [65, `${t("own")} 35`], [50, "50"], [35, `${t("opp")} 35`], [20, `${t("opp")} 20`], [10, `${t("opp")} 10`]];
+  const html = `<span class="tag">${t("sit")}</span>
+    <div class="field sm"><label>${t("down")}</label><select data-k="down">${downs.map((d, i) => `<option value="${i + 1}">${d}</option>`).join("")}</select></div>
+    <div class="field sm"><label>${t("togo")}</label><select data-k="togo">${[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20].map(v => `<option>${v}</option>`).join("")}</select></div>
+    <div class="field sm"><label>${t("ball")}</label><select data-k="toGoal">${ballOpts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></div>
+    <div class="field sm"><label>${t("objective")}</label><select data-k="objective">${["auto", "cmp", "conv", "yds"].map(o => `<option value="${o}">${t("obj_" + o)}</option>`).join("")}</select></div>
+    <div class="sum">${state.objective === "auto" ? t("sum_auto", { d: downs[state.down - 1], o: objLabel(objectiveKey()) }) : t("sum_manual", { o: objLabel(objectiveKey()) })}</div>`;
+  document.querySelectorAll("[data-sit]").forEach(el => { el.innerHTML = html; el.querySelectorAll("select").forEach(s => { s.value = String(state[s.dataset.k]); }); });
+}
+document.addEventListener("change", e => {
+  const k = e.target.dataset && e.target.dataset.k; if (!k) return;
+  state[k] = k === "objective" ? e.target.value : +e.target.value;
+  renderAll();
+});
+
+// ======================= Player cards =======================
+function traitBar(label, sub, p, color, foot) {
+  return `<div><div class="trait-label"><b>${label}</b><span>${sub}</span></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><div class="bar" style="flex:1"><div style="width:${p}%;background:${color}"></div><span class="tick"></span></div>
+    <span class="pct">${p}<small>${ord(p)}</small></span></div><div class="trait-foot">${foot}</div></div>`;
+}
 const ARCH_COLOR = { "Route technician": "--cut", "Complete threat": "--ink", "Speed burner": "--go", "Scheme-dependent": "--ink-3",
   "Stiff on breaks": "--cut", "Exploitable both ways": "--flag", "Lacks long speed": "--go", "Lockdown": "--ink-3" };
-const ARCH_NOTE = {
-  "Route technician": "creates his space at the break: sharp, sudden, hard to mirror.",
-  "Speed burner": "wins by running past the corner: eats the cushion and gets on top.",
-  "Complete threat": "beats man coverage both at the break and with straight-line speed.",
-  "Scheme-dependent": "rarely wins his one-on-one outright: scheme him open (motion, stacks, rubs).",
-  "Stiff on breaks": "gives up space when the receiver snaps off his route, but carries speed downfield.",
-  "Lacks long speed": "mirrors breaks well but gets run past on vertical routes.",
-  "Exploitable both ways": "leaks separation at the break and over the top.",
-  "Lockdown": "holds up against both breaks and speed: target someone else."
-};
-
-// ---------- Matchup model ----------
-function matchup(w, c) {
-  const eCut = (w.burst + c.burst) / FIT.burst.route_sd;
-  const eGo = (w.burn + c.burn) / FIT.burn.route_sd;
-  const diff = eCut - eGo;
-  return { eCut, eGo, diff, call: diff >= 0 ? "cut" : "go",
-    expBurst: FIT.burst.mu + w.burst + c.burst, expBurn: FIT.burn.mu + w.burn + c.burn,
-    strength: Math.abs(diff) >= 0.5 ? 3 : Math.abs(diff) >= 0.2 ? 2 : 1 };
-}
-
-// ---------- Header chips ----------
-const M = D.meta;
-$("chips").innerHTML = [
-  [M.games, "games"], [M.man_plays.toLocaleString("en-US"), "man-coverage dropbacks"], [M.duels.toLocaleString("en-US"), "WR–CB duels tracked"],
-  [M.families.cut + " / " + M.families.vertical, "cuts / verticals"], [M.n_wr + " WR · " + M.n_cb + " CB", "profiled"]
-].map(([v, k]) => `<span class="chip"><b>${esc(v)}</b> ${esc(k)}</span>`).join("");
-
-// ---------- Selects ----------
-function fillSelect(sel, arr) {
-  sel.innerHTML = arr.map(p => `<option value="${p.nflId}">${esc(p.name)} · ${esc(p.team)}</option>`).join("");
-}
-fillSelect($("selWR"), WR); fillSelect($("selCB"), CB);
-const state = { wr: (WR.find(p => p.name === "Mike Evans") || WR[0]).nflId, cb: (CB.find(p => p.name === "Xavien Howard") || CB[0]).nflId };
-
-// ---------- Player cards ----------
-function traitBar(label, sub, pct, color, foot) {
-  return `<div><div class="trait-label"><b>${label}</b><span>${sub}</span></div>
-    <div style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1"><div style="width:${pct}%;background:${color}"></div><span class="tick"></span></div>
-    <span class="pct">${pct}<small style="font-size:11px;color:var(--ink-3)">${ord(pct).replace(/^\d+/, "")}</small></span></div>
-    <div class="trait-foot">${foot}</div></div>`;
-}
+function badge(arch) { const c = `var(${ARCH_COLOR[arch]})`; return `<span class="badge" style="color:${c};border:1.5px solid ${c}"><i style="background:${c}"></i>${esc(t("arch")[arch])}</span>`; }
 function bio(p) {
-  const parts = [p.height ? p.height.replace("-", "′") + "″" : null, p.weight ? p.weight + " lb" : null, p.collegeName, p.age ? p.age.toFixed(0) + " yrs" : null];
-  return parts.filter(Boolean).map(esc).join(" · ");
+  return [p.height ? p.height.replace("-", "′") + "″" : null, p.weight ? p.weight + " lb" : null, p.collegeName, p.age ? Math.floor(p.age) + " " + t("yrs") : null]
+    .filter(Boolean).map(esc).join(" · ");
 }
-function badge(arch) {
-  const c = `var(${ARCH_COLOR[arch]})`;
-  return `<span class="badge" style="color:${c};border:1.5px solid ${c}"><i style="background:${c}"></i>${esc(arch)}</span>`;
-}
+const fortyTag = p => p.forty ? `<span class="forty">${t("forty")} <b>${num(p.forty, 2)} s</b> ${t("combine")} ${p.combine_year}</span>` : `<span class="forty">${t("no_forty")}</span>`;
 function playerTop(p, pos) {
-  const num = p.jerseyNumber != null ? Math.round(p.jerseyNumber) : "–";
-  return `<div class="p-top"><div class="jersey">${num}</div><div style="min-width:0">
-    <h3 class="p-name">${esc(p.name)}</h3><div class="p-meta"><span class="p-pos">${pos} · ${esc(p.team)}</span> · ${bio(p)}</div>
-    ${badge(p.archetype)}</div></div>`;
+  const n = p.jerseyNumber != null ? Math.round(p.jerseyNumber) : "–";
+  return `<div class="p-top"><div class="jersey">${n}</div><div style="min-width:0"><h3 class="p-name">${esc(p.name)}</h3>
+    <div class="p-meta"><span class="p-pos">${pos} · ${esc(p.team)}</span> · ${bio(p)}</div>
+    <div>${fortyTag(p)}${badge(p.archetype)}${p.tier === "limited" ? `<span class="limited">${t("limited")}</span>` : ""}</div></div></div>`;
 }
 function renderWR(w) {
   $("cardWR").innerHTML = playerTop(w, "WR") + `<div class="p-body">
-    ${traitBar("Burst", "wins at the break", w.pct_burst, "var(--cut)", `${sgn(w.raw_burst ?? 0)} yd per break (raw) · ${w.n_cut} cuts`)}
-    ${traitBar("Burn", "wins with speed", w.pct_burn, "var(--go)", `${(w.raw_burn ?? 0).toFixed(2)} yd/s gained on the CB (raw) · ${w.n_vert} verticals`)}
-    <p class="scout-note"><b>${esc(w.name)}</b> ${ARCH_NOTE[w.archetype]}</p>
-    <div class="tree-wrap"><div class="trait-label"><b>Route tree vs man</b><span>snap → throw · yards (width ×1.5)</span></div>${routeTree(w)}
-    <div class="mini-legend"><span><i style="background:var(--cut)"></i>Breaking routes (${w.n_cut})</span><span><i style="background:var(--go)"></i>Verticals (${w.n_vert})</span></div></div>
+    ${traitBar(t("burst"), t("wins_break"), w.pct_burst, "var(--cut)", `${sgn(w.raw_burst ?? 0)} ${t("per_break")} · ${w.n_cut} ${t("cuts")}`)}
+    ${traitBar(t("burn"), t("wins_speed"), w.pct_burn, "var(--go)", `${num(w.raw_burn ?? 0, 2)} ${t("gained_cb")} · ${w.n_vert} ${t("verts")}`)}
+    <p class="scout-note"><b>${esc(w.name)}</b> ${t("note")[w.archetype]}</p>
+    <div><div class="trait-label"><b>${t("tree")}</b><span>${t("tree_sub")}</span></div>${routeTree(w)}
+    <div class="mini-legend"><span><i style="background:#8ec5ff"></i>${t("br_routes")} (${w.n_cut})</span><span><i style="background:#ffb27a"></i>${t("vert_routes")} (${w.n_vert})</span></div></div>
   </div>`;
 }
 function renderCB(c) {
-  const breakGrade = 100 - c.pct_burst, deepGrade = 100 - c.pct_burn;
   $("cardCB").innerHTML = playerTop(c, "CB") + `<div class="p-body">
-    ${traitBar("Break coverage", "mirrors cuts", breakGrade, "var(--cut)", `allows ${sgn(c.raw_burst ?? 0)} yd per break (raw) · ${c.n_cut} cuts faced`)}
-    ${traitBar("Deep coverage", "carries speed", deepGrade, "var(--go)", `allows ${(c.raw_burn ?? 0).toFixed(2)} yd/s downfield (raw) · ${c.n_vert} verticals faced`)}
-    <p class="scout-note"><b>${esc(c.name)}</b> ${ARCH_NOTE[c.archetype]}</p>
-    <p class="scout-note"><b>How to attack him:</b> ${c.z_burst - c.z_burn >= 0
-      ? "make him change direction: breaking routes at the stem, double moves off the break."
-      : "stress him vertically: go balls, seams, deep stems before the break."}</p>
-    <div class="trait-foot">Grades are percentiles among ${CB.length} profiled corners (higher = tighter coverage). League profile: ${sgn(FIT.burst.mu)} yd per break, ${FIT.burn.mu.toFixed(2)} yd/s on verticals.</div>
-  </div>`;
+    ${traitBar(t("break_cov"), t("mirrors"), 100 - c.pct_burst, "var(--cut)", `${t("allows")} ${sgn(c.raw_burst ?? 0)} ${t("per_break")} · ${c.n_cut} ${t("cuts")} ${t("faced")}`)}
+    ${traitBar(t("deep_cov"), t("carries"), 100 - c.pct_burn, "var(--go)", `${t("allows")} ${num(c.raw_burn ?? 0, 2)} ${t("allows_dn")} · ${c.n_vert} ${t("verts")} ${t("faced")}`)}
+    <p class="scout-note"><b>${esc(c.name)}</b> ${t("note")[c.archetype]}</p>
+    <p class="scout-note"><b>${t("how_attack")}</b> ${c.z_burst - c.z_burn >= 0 ? t("atk_cut") : t("atk_go")}</p>
+    <div class="trait-foot">${t("grades_note", { n: CB.length })}</div></div>`;
 }
 
-// ---------- Route tree (SVG) ----------
+// ======================= Route tree on a football field =======================
 function routeTree(w) {
   const P = D.paths[String(w.nflId)] || {};
-  const W = 320, H = 230, s = 6.2, sl = 9.5, cx = W / 2, baseY = H - 22;  // latéral ×1.5 pour la lisibilité
+  const W = 320, H = 250, s = 6.4, sl = 9.5, cx = W / 2, baseY = H - 24;  // latéral ×1,5 pour la lisibilité
   const X = l => cx + l * sl, Y = d => baseY - d * s;
-  let g = "";
-  for (let d = 0; d <= 30; d += 5) {
-    g += `<line x1="8" x2="${W - 8}" y1="${Y(d)}" y2="${Y(d)}" stroke="var(--line${d === 0 ? "-2" : ""})" stroke-width="${d === 0 ? 2 : 1}"/>`;
-    if (d) g += `<text x="10" y="${Y(d) - 3}" font-size="10" fill="var(--ink-3)">${d}</text>`;
+  let g = `<rect width="${W}" height="${H}" fill="#2f6b34"/>`;
+  for (let d = -5; d < 35; d += 5) g += `<rect x="0" y="${Y(d + 5)}" width="${W}" height="${5 * s}" fill="${Math.abs(d / 5) % 2 ? "#357a3b" : "#2f6b34"}"/>`;
+  for (let d = -3; d <= 34; d++) {  // repères de hash et de bord, chaque yard
+    if (d % 5 === 0) continue;
+    for (const [a, b] of [[cx - 28, cx - 22], [cx + 22, cx + 28], [4, 10], [W - 10, W - 4]])
+      g += `<line x1="${a}" x2="${b}" y1="${Y(d)}" y2="${Y(d)}" stroke="#fff" stroke-opacity=".55"/>`;
   }
-  g += `<text x="${W - 10}" y="${H - 6}" font-size="10" fill="var(--ink-3)" text-anchor="end">outside →</text>`;
-  g += `<text x="10" y="${H - 6}" font-size="10" fill="var(--ink-3)">← inside</text>`;
-  g += `<text x="${cx}" y="${baseY + 13}" font-size="10" fill="var(--ink-3)" text-anchor="middle">LOS</text>`;
-  for (const [fam, color] of [["vertical", "var(--go)"], ["cut", "var(--cut)"]]) {
+  for (let d = 5; d <= 30; d += 5) {
+    g += `<line x1="0" x2="${W}" y1="${Y(d)}" y2="${Y(d)}" stroke="#fff" stroke-opacity=".8" stroke-width="1.5"/>`;
+    g += `<text x="18" y="${Y(d) + 4}" font-size="11" font-weight="700" fill="#fff" fill-opacity=".85">${d}</text><text x="${W - 18}" y="${Y(d) + 4}" font-size="11" font-weight="700" fill="#fff" fill-opacity=".85" text-anchor="end">${d}</text>`;
+  }
+  g += `<line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="#4aa3ff" stroke-width="3"/>`;  // ligne de mêlée
+  if (state.togo <= 30) g += `<line x1="0" x2="${W}" y1="${Y(state.togo)}" y2="${Y(state.togo)}" stroke="#ffd400" stroke-width="3"/>`;  // ligne à atteindre
+  for (const [fam, color] of [["vertical", "#ffb27a"], ["cut", "#8ec5ff"]]) {
     for (const path of P[fam] || []) {
-      const pts = path.filter(([l, d]) => Math.abs(l) < 16 && d > -4 && d < 34).map(([l, d]) => `${X(l).toFixed(1)},${Y(d).toFixed(1)}`).join(" ");
-      g += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-opacity=".55" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const pts = path.filter(([l, d]) => Math.abs(l) < 16 && d > -4 && d < 36).map(([l, d]) => `${X(l).toFixed(1)},${Y(d).toFixed(1)}`).join(" ");
+      g += `<polyline points="${pts}" fill="none" stroke="#0b2e10" stroke-opacity=".55" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+      g += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
   }
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Route tree of ${esc(w.name)}">${g}</svg>`;
+  g += `<text x="${W - 8}" y="${H - 7}" font-size="10" fill="#fff" fill-opacity=".9" text-anchor="end">${t("outside")}</text><text x="8" y="${H - 7}" font-size="10" fill="#fff" fill-opacity=".9">${t("inside")}</text>`;
+  return `<div class="turf"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(t("tree"))} ${esc(w.name)}">${g}</svg></div>`;
 }
 
-// ---------- Verdict ----------
-function edgeRow(label, v, color, vmax) {
-  const w = Math.min(Math.abs(v) / vmax, 1) * 50;
-  const left = v >= 0 ? 50 : 50 - w;
-  return `<div class="edge-row"><span class="lbl">${label}</span><div class="edge-track"><span class="zero"></span>
-    <div class="fill" style="left:${left}%;width:${w}%;background:${color}"></div></div><span class="edge-val">${sgn(v)}</span></div>`;
-}
+// ======================= Verdict =======================
 function renderVerdict(w, c) {
-  const m = matchup(w, c);
-  const go = m.call === "go";
-  const conf = ["Toss-up", "Lean", "Strong"][m.strength - 1];
-  const why = go
-    ? `${esc(w.name)} gains ${m.expBurn.toFixed(2)} yd/s on ${esc(c.name)} running straight (league ${FIT.burn.mu.toFixed(2)}), a bigger edge than at the break.`
-    : `${esc(w.name)} is expected to gain ${sgn(m.expBurst)} yd on ${esc(c.name)} at the break (league ${sgn(FIT.burst.mu)}), a bigger edge than in a straight line.`;
-  const v = $("verdict");
+  const r = evaluate(w, c), go = r.call === "go", key = r.key, v = $("verdict");
   v.className = "card verdict" + (go ? " go" : "");
-  v.innerHTML = `<div><div class="v-kicker">The call</div><p class="v-call">${go ? "Go vertical" : "Break it off"}</p>
-      <p class="v-routes">${go ? ROUTES.go : ROUTES.cut}</p></div>
-    <div class="conf"><span class="dots">${[1, 2, 3].map(i => `<i class="${i <= m.strength ? "on" : ""}"></i>`).join("")}</span>
-      <span><b>${conf}</b> · edge gap ${Math.abs(m.diff).toFixed(2)} SD</span></div>
-    <div>${edgeRow("Break edge", m.eCut, "var(--cut)", 1.2)}<div style="height:8px"></div>${edgeRow("Vertical edge", m.eGo, "var(--go)", 1.2)}
-      <div class="edge-axis" style="margin-top:4px"><span></span><div><span>CB wins</span><span>league avg</span><span>WR wins</span></div><span></span></div></div>
-    <div class="expect">
-      <div class="stat"><div class="k">Expected Burst</div><div class="v" style="color:var(--cut)">${sgn(m.expBurst)} yd</div><div class="s">separation gained per break</div></div>
-      <div class="stat"><div class="k">Expected Burn</div><div class="v" style="color:var(--go)">${m.expBurn.toFixed(2)} yd/s</div><div class="s">downfield gain on the CB</div></div>
-    </div>
-    <p class="scout-note">${why} Edges are in route standard deviations (WR effect + CB effect, opponent-adjusted).</p>`;
+  const cutW = Math.round(r.shareCut * 100), goW = 100 - cutW, pc = n => n + (LANG === "fr" ? " %" : "%");
+  const cell = (k, fam, f) => `<td class="${r[fam][k] >= r[fam === "cut" ? "go" : "cut"][k] ? "win" : ""}">${f(r[fam][k])}</td>`;
+  const row = (k, label, f) => `<tr class="${k === key ? "obj" : ""}"><td>${label}</td>${cell(k, "cut", f)}${cell(k, "go", f)}</tr>`;
+  v.innerHTML = `<div><div class="eyebrow">${t("the_call")}</div><p class="v-call">${go ? t("call_go") : t("call_cut")}</p><p class="v-routes">${go ? t("routes_go") : t("routes_cut")}</p></div>
+    <div><div class="split"><div class="c" style="width:${cutW}%;padding:${cutW ? "0 10px" : "0"}">${cutW >= 14 ? "CUT " + pc(cutW) : ""}</div><div class="g" style="width:${goW}%;padding:${goW ? "0 10px" : "0"}">${goW >= 14 ? "GO " + pc(goW) : ""}</div></div>
+      <div class="split-cap">${t("split_cap", { b: B })} · <b>${t("conf")[r.conf]}</b></div></div>
+    <table class="cmp"><thead><tr><th></th><th class="c">${t("col_cut")}</th><th class="g">${t("col_go")}</th></tr></thead><tbody>
+      ${row("cmp", t("row_cmp"), x => pct(x))}${row("conv", t("row_conv"), x => pct(x))}${row("yds", t("row_yds"), x => num(x, 1))}
+      <tr><td>${t("row_int")}</td><td>${pct(SIT.cut.int_rate)}</td><td>${pct(SIT.vertical.int_rate)}</td></tr>
+      <tr><td>${t("row_metric")}</td><td>${sgn(r.mC)}</td><td>${num(r.mG, 2)}</td></tr>
+    </tbody></table>
+    <p class="scout-note">${t(go ? "why_go" : "why_cut", { w: esc(w.name), c: esc(c.name), p: Math.round((go ? 1 - r.shareCut : r.shareCut) * 100) })}</p>`;
 }
 
+// ======================= Ranked lists (home + game plan) =======================
+function rankList(items, capTarget) {
+  return `<div class="rk-cap"><span>#</span><span>${capTarget}</span><span>${t("cap_call")}</span><span class="mcol">${t("cap_best_long")}</span><span></span></div>
+    <div class="rank">${items.map((x, i) => `<div class="rk ${i === 0 ? "best" : ""}" data-w="${x.w.nflId}" data-c="${x.c.nflId}" role="button" tabindex="0">
+      <span class="n">${i + 1}</span><span class="who">${esc(x.c.name)} <small>${esc(x.c.team)}${x.c.tier === "limited" ? " · " + t("limited") : ""}</small></span>
+      <span class="pill ${x.call}">${x.call === "cut" ? "CUT" : "GO"} · ${fmtObj(x.key, x.val)}</span>
+      <span class="meter"><i style="width:${Math.round(x.rate * 100)}%;${i === 0 ? "background:var(--good)" : ""}"></i></span><span class="val">${pct(x.rate)}</span></div>`).join("")}</div>`;
+}
+function rankItems(w, cbs, maximize) {  // attaque : corner à viser (max) ; défense : corner à affecter (min)
+  const rates = pickRates(w, cbs, maximize);
+  return cbs.map((c, i) => { const r = evaluate(w, c); return { w, c, call: r.call, val: r.best, key: r.key, rate: rates[i] }; })
+    .sort((a, b) => maximize ? b.val - a.val : a.val - b.val);
+}
+function renderHome() {
+  const M = D.meta;
+  $("chips").innerHTML = [[M.games, 0], [M.man_plays.toLocaleString(LANG === "fr" ? "fr-FR" : "en-US"), 1], [M.duels.toLocaleString(LANG === "fr" ? "fr-FR" : "en-US"), 2], [M.n_wr_web, 3], [M.n_cb_web, 4]]
+    .map(([v, i]) => `<span class="chip"><b>${esc(v)}</b> ${t("chips")[i]}</span>`).join("");
+  const side = (offTeam, defTeam, title) => {
+    const ws = WR.filter(p => p.team === offTeam), cs = CB.filter(p => p.team === defTeam), name = defTeam === "PIT" ? "Steelers" : "Saints";
+    let h = `<h2>${title}</h2><p class="sub">${t("vs_corners", { t: name })} · ${objLabel(objectiveKey())}</p>`;
+    for (const w of ws) {
+      h += `<div class="wr-block"><div class="wr-head"><b>${esc(w.name)}</b><span>WR · ${esc(w.team)} · ${esc(t("arch")[w.archetype])}${w.forty ? " · " + t("forty") + " " + num(w.forty, 2) + " s" : ""}${w.tier === "limited" ? " · " + t("limited") : ""}</span></div>
+        <div class="eyebrow" style="margin:6px 0">${t("attack_with")}</div>${rankList(rankItems(w, cs, true), t("cap_target"))}
+        <div class="eyebrow" style="margin:14px 0 6px">${t("assign_title", { t: name })}</div>${rankList(rankItems(w, cs, false), t("cap_assign"))}</div>`;
+    }
+    return h;
+  };
+  $("homeNO").innerHTML = side("NO", "PIT", t("no_off"));
+  $("homePIT").innerHTML = side("PIT", "NO", t("pit_off"));
+}
+
+// ======================= Game plan board =======================
+function cellColor(diff) {
+  const k = Math.min(Math.abs(diff) / 0.12, 1);
+  return `color-mix(in oklab, ${diff >= 0 ? css("--cut") : css("--go")} ${Math.round(k * 70)}%, ${css("--neutral")})`;
+}
+function renderPlan() {
+  const ws = WR.filter(p => state.off === "ALL" || p.team === state.off), cs = CB.filter(p => state.def === "ALL" || p.team === state.def);
+  if (!ws.length || !cs.length) { $("boardWrap").innerHTML = `<div class="empty">${t("no_players")}</div>`; $("attackList").innerHTML = $("assignList").innerHTML = ""; return; }
+  const key = objectiveKey();
+  let h = `<table class="board"><thead><tr><th></th>${cs.map(c => `<th scope="col">${esc(c.name)}<br><small>${esc(c.team)}${c.tier === "limited" ? " · " + t("limited") : ""}</small></th>`).join("")}</tr></thead><tbody>`;
+  for (const w of ws) {
+    const evals = cs.map(c => evaluate(w, c)), bestIdx = evals.reduce((bi, r, i) => r.best > evals[bi].best ? i : bi, 0);
+    h += `<tr><th scope="row">${esc(w.name)} <small>${esc(w.team)}</small></th>`;
+    evals.forEach((r, i) => {
+      const diff = r.cut[key] - r.go[key], scaled = key === "yds" ? diff / 25 : diff;
+      h += `<td data-w="${w.nflId}" data-c="${cs[i].nflId}" class="${i === bestIdx && cs.length > 1 ? "pick" : ""}" style="background:${cellColor(scaled)}"><b>${r.call === "cut" ? "CUT" : "GO"}</b><span>${fmtObj(key, r.best)} · ${pct(Math.max(r.shareCut, 1 - r.shareCut))}</span></td>`;
+    });
+    h += "</tr>";
+  }
+  $("boardWrap").innerHTML = h + "</tbody></table>";
+  const top = ws.slice(0, 6);
+  const block = (w, maximize) => `<div class="wr-block"><div class="wr-head"><b>${esc(w.name)}</b><span>${esc(w.team)} · ${esc(t("arch")[w.archetype])}</span></div>${rankList(rankItems(w, cs, maximize).slice(0, 5), t(maximize ? "cap_target" : "cap_assign"))}</div>`;
+  $("attackList").innerHTML = top.map(w => block(w, true)).join("");
+  $("assignList").innerHTML = top.map(w => block(w, false)).join("");
+}
+function fillTeams() {
+  const teamsOff = [...new Set(WR.map(p => p.team))].sort(), teamsDef = [...new Set(CB.map(p => p.team))].sort();
+  $("selOff").innerHTML = teamsOff.map(x => `<option>${x}</option>`).join("") + `<option value="ALL">${t("all")} (${WR.length})</option>`;
+  $("selDef").innerHTML = teamsDef.map(x => `<option>${x}</option>`).join("") + `<option value="ALL">${t("all")} (${CB.length})</option>`;
+  $("selOff").value = state.off; $("selDef").value = state.def;
+}
+$("selOff").addEventListener("change", e => { state.off = e.target.value; renderPlan(); });
+$("selDef").addEventListener("change", e => { state.def = e.target.value; renderPlan(); });
+
+// ======================= Lab =======================
+function fillPlayers() {
+  const opt = arr => [...new Set(arr.map(p => p.team))].map(tm => `<optgroup label="${tm}">${arr.filter(p => p.team === tm)
+    .map(p => `<option value="${p.nflId}">${esc(p.name)}${p.tier === "limited" ? " *" : ""}</option>`).join("")}</optgroup>`).join("");
+  $("selWR").innerHTML = opt(WR); $("selCB").innerHTML = opt(CB);
+}
 function renderLab() {
   const w = byId(WR, state.wr), c = byId(CB, state.cb);
   $("selWR").value = w.nflId; $("selCB").value = c.nflId;
   renderWR(w); renderCB(c); renderVerdict(w, c);
-  renderScatters();
-  markBoard();
 }
-$("selWR").addEventListener("change", e => { state.wr = +e.target.value; renderLab(); });
-$("selCB").addEventListener("change", e => { state.cb = +e.target.value; renderLab(); });
-$("btnRandom").addEventListener("click", () => {
-  state.wr = WR[Math.floor(Math.random() * WR.length)].nflId; state.cb = CB[Math.floor(Math.random() * CB.length)].nflId; renderLab();
-});
+$("selWR").addEventListener("change", e => { state.wr = +e.target.value; renderLab(); renderScatters(); });
+$("selCB").addEventListener("change", e => { state.cb = +e.target.value; renderLab(); renderScatters(); });
+$("btnSwap").addEventListener("click", () => { state.wr = WR[Math.floor(Math.random() * WR.length)].nflId; state.cb = CB[Math.floor(Math.random() * CB.length)].nflId; renderLab(); renderScatters(); });
+function openLab(wId, cId) { state.wr = wId; state.cb = cId; renderLab(); renderScatters(); location.hash = "#lab"; scrollTo(0, 0); }
+document.addEventListener("click", e => { const el = e.target.closest(".rk, .board td"); if (el && el.dataset.w) openLab(+el.dataset.w, +el.dataset.c); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.classList && e.target.classList.contains("rk")) openLab(+e.target.dataset.w, +e.target.dataset.c); });
 
-// ---------- Board ----------
-const teamsOff = [...new Set(WR.map(p => p.team))].sort(), teamsDef = [...new Set(CB.map(p => p.team))].sort();
-$("selOff").innerHTML = `<option value="ALL">All profiled WRs (${WR.length})</option>` + teamsOff.map(t => `<option>${t}</option>`).join("");
-$("selDef").innerHTML = `<option value="ALL">All profiled CBs (${CB.length})</option>` + teamsDef.map(t => `<option>${t}</option>`).join("");
-$("selOff").value = "ALL"; $("selDef").value = teamsDef.includes("LAC") ? "LAC" : "ALL";
-function cellColor(diff) {
-  const t = Math.min(Math.abs(diff) / 1.0, 1);
-  const end = diff >= 0 ? css("--cut") : css("--go");
-  return `color-mix(in oklab, ${end} ${Math.round(t * 85)}%, ${css("--neutral")})`;
-}
-function renderBoard() {
-  const off = $("selOff").value, def = $("selDef").value;
-  const ws = WR.filter(p => off === "ALL" || p.team === off).sort((a, b) => (b.z_burst - b.z_burn) - (a.z_burst - a.z_burn));
-  const cs = CB.filter(p => def === "ALL" || p.team === def).sort((a, b) => (b.z_burst - b.z_burn) - (a.z_burst - a.z_burn));
-  if (!ws.length || !cs.length) { $("boardWrap").innerHTML = `<div class="empty">No profiled player for this selection.</div>`; return; }
-  let h = `<table class="board"><thead><tr><th></th>${cs.map(c => `<th scope="col"><div>${esc(c.name)} <small>${esc(c.team)}</small></div></th>`).join("")}</tr></thead><tbody>`;
-  for (const w of ws) {
-    h += `<tr><th scope="row">${esc(w.name)} <small>${esc(w.team)}</small></th>`;
-    for (const c of cs) {
-      const m = matchup(w, c);
-      const light = Math.abs(m.diff) > 0.9;  // texte blanc seulement sur les cellules très saturées
-      h += `<td data-w="${w.nflId}" data-c="${c.nflId}" class="${m.strength === 3 ? "strong" : ""}" style="background:${cellColor(m.diff)};${light ? "color:#fff" : ""}">${m.call === "cut" ? "CUT" : "GO"}</td>`;
-    }
-    h += "</tr>";
-  }
-  $("boardWrap").innerHTML = h + "</tbody></table>";
-  markBoard();
-}
-function markBoard() {
-  document.querySelectorAll(".board td").forEach(td => td.classList.toggle("sel", +td.dataset.w === state.wr && +td.dataset.c === state.cb));
-}
-$("selOff").addEventListener("change", renderBoard); $("selDef").addEventListener("change", renderBoard);
-$("boardWrap").addEventListener("click", e => {
-  const td = e.target.closest("td"); if (!td) return;
-  state.wr = +td.dataset.w; state.cb = +td.dataset.c; renderLab(); $("lab").scrollIntoView();
-});
-$("boardWrap").addEventListener("mousemove", e => {
-  const td = e.target.closest("td"); if (!td) return hideTip();
-  const w = byId(WR, +td.dataset.w), c = byId(CB, +td.dataset.c), m = matchup(w, c);
-  showTip(e, `<b>${esc(w.name)} vs ${esc(c.name)}</b><br><span class="m">Call:</span> ${m.call === "cut" ? "breaking routes" : "verticals"} (${["toss-up", "lean", "strong"][m.strength - 1]})
-    <br><span class="m">Break edge</span> ${sgn(m.eCut)} SD · <span class="m">exp.</span> ${sgn(m.expBurst)} yd
-    <br><span class="m">Vertical edge</span> ${sgn(m.eGo)} SD · <span class="m">exp.</span> ${m.expBurn.toFixed(2)} yd/s`);
-});
-$("boardWrap").addEventListener("mouseleave", hideTip);
-
-// ---------- Scatter plots ----------
+// ======================= Scatter plots =======================
 function scatter(el, arr, sel, isWR) {
   const W = 560, H = 460, pad = { l: 44, r: 16, t: 14, b: 40 };
   const lim = Math.max(2.5, ...arr.map(p => Math.max(Math.abs(p.z_burst), Math.abs(p.z_burn)))) * 1.22;
   const X = v => pad.l + (v + lim) / (2 * lim) * (W - pad.l - pad.r), Y = v => pad.t + (lim - v) / (2 * lim) * (H - pad.t - pad.b);
-  const corners = isWR ? ["ROUTE TECHNICIANS", "COMPLETE THREATS", "SCHEME-DEPENDENT", "SPEED BURNERS"]
-    : ["STIFF ON BREAKS", "EXPLOITABLE BOTH WAYS", "LOCKDOWN", "LACKS LONG SPEED"];
+  const corners = t(isWR ? "q_wr" : "q_cb");
   let g = `<rect x="${pad.l}" y="${pad.t}" width="${W - pad.l - pad.r}" height="${H - pad.t - pad.b}" fill="none" stroke="var(--line)"/>`;
   g += `<line x1="${X(0)}" x2="${X(0)}" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--line-2)"/><line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line-2)"/>`;
   const cp = [[pad.l + 8, pad.t + 16, "start"], [W - pad.r - 8, pad.t + 16, "end"], [pad.l + 8, H - pad.b - 8, "start"], [W - pad.r - 8, H - pad.b - 8, "end"]];
   cp.forEach(([x, y, a], i) => g += `<text x="${x}" y="${y}" text-anchor="${a}" font-size="11" font-weight="600" letter-spacing=".06em" fill="var(--ink-3)">${corners[i]}</text>`);
-  for (let v = -2; v <= 2; v++) {
-    g += `<text x="${X(v)}" y="${H - pad.b + 16}" text-anchor="middle" font-size="10" fill="var(--ink-3)">${v}</text>`;
-    g += `<text x="${pad.l - 8}" y="${Y(v) + 3}" text-anchor="end" font-size="10" fill="var(--ink-3)">${v}</text>`;
+  for (let v = -3; v <= 3; v++) {
+    if (Math.abs(v) >= lim) continue;
+    g += `<text x="${X(v)}" y="${H - pad.b + 16}" text-anchor="middle" font-size="10" fill="var(--ink-3)">${v}</text><text x="${pad.l - 8}" y="${Y(v) + 3}" text-anchor="end" font-size="10" fill="var(--ink-3)">${v}</text>`;
   }
-  g += `<text x="${(pad.l + W - pad.r) / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${isWR ? "Burn · wins with speed (z) →" : "Burn allowed · beaten over the top (z) →"}</text>`;
-  g += `<text transform="translate(12 ${(pad.t + H - pad.b) / 2}) rotate(-90)" text-anchor="middle" font-size="11" fill="var(--ink-2)">${isWR ? "Burst · wins at the break (z) →" : "Burst allowed · beaten on breaks (z) →"}</text>`;
-  const top = new Set(arr.slice().sort((a, b) => (b.z_burst ** 2 + b.z_burn ** 2) - (a.z_burst ** 2 + a.z_burn ** 2)).slice(0, 7).map(p => p.nflId));
+  g += `<text x="${(pad.l + W - pad.r) / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${t(isWR ? "ax_wr_x" : "ax_cb_x")}</text>`;
+  g += `<text transform="translate(12 ${(pad.t + H - pad.b) / 2}) rotate(-90)" text-anchor="middle" font-size="11" fill="var(--ink-2)">${t(isWR ? "ax_wr_y" : "ax_cb_y")}</text>`;
+  const top = new Set(arr.filter(p => p.tier === "profiled").sort((a, b) => (b.z_burst ** 2 + b.z_burn ** 2) - (a.z_burst ** 2 + a.z_burn ** 2)).slice(0, 7).map(p => p.nflId));
+  const placed = cp.map(([x, y, a]) => a === "start" ? [x, y - 12, x + 190, y + 3] : [x - 190, y - 12, x, y + 3]);
   let dots = "", labels = "";
-  const placed = cp.map(([x, y, a]) => a === "start" ? [x, y - 12, x + 170, y + 3] : [x - 170, y - 12, x, y + 3]);  // étiquettes posées
-  const order = arr.slice().sort((a, b) => (b.nflId === sel) - (a.nflId === sel));
-  for (const p of order) {
-    const isSel = p.nflId === sel, color = p.z_burst - p.z_burn >= 0 ? "var(--cut)" : "var(--go)";
-    const cx = X(p.z_burn), cy = Y(p.z_burst);
-    dots += `<circle class="dot" data-id="${p.nflId}" cx="${cx}" cy="${cy}" r="${isSel ? 8 : 5.5}" fill="${color}" stroke="${isSel ? "var(--ink)" : "var(--surface)"}" stroke-width="${isSel ? 2.5 : 1.5}"/>`;
+  for (const p of arr.slice().sort((a, b) => (b.nflId === sel) - (a.nflId === sel))) {
+    const isSel = p.nflId === sel, color = p.z_burst - p.z_burn >= 0 ? "var(--cut)" : "var(--go)", cx = X(p.z_burn), cy = Y(p.z_burst), hollow = p.tier === "limited" && !isSel;
+    dots += `<circle class="dot" data-id="${p.nflId}" cx="${cx}" cy="${cy}" r="${isSel ? 8 : 5.5}" fill="${hollow ? "var(--surface)" : color}" stroke="${isSel ? "var(--ink)" : hollow ? color : "var(--surface)"}" stroke-width="${isSel ? 2.5 : 1.5}"/>`;
     if (!(isSel || top.has(p.nflId))) continue;
     const right = cx < W - 140, wTxt = p.name.length * (isSel ? 7.4 : 6.3);
-    let y = cy - 8;
     const box = yy => right ? [cx + 9, yy - 11, cx + 9 + wTxt, yy + 3] : [cx - 9 - wTxt, yy - 11, cx - 9, yy + 3];
-    const hit = b => placed.some(q => b[0] < q[2] && b[2] > q[0] && b[1] < q[3] && b[3] > q[1]);
+    const hit = bx => placed.some(q => bx[0] < q[2] && bx[2] > q[0] && bx[1] < q[3] && bx[3] > q[1]);
+    let y = cy - 8;
     for (let k = 1; k < 7 && hit(box(y)); k++) y = cy - 8 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 14;
     placed.push(box(y));
     labels += `<text x="${right ? cx + 9 : cx - 9}" y="${y}" text-anchor="${right ? "start" : "end"}" font-size="${isSel ? 12.5 : 11}" font-weight="${isSel ? 700 : 500}" fill="var(--ink)" stroke="var(--surface)" stroke-width="3" paint-order="stroke" pointer-events="none">${esc(p.name)}</text>`;
   }
-  g += dots + labels;
-  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${isWR ? "Receiver" : "Cornerback"} profiles scatter">${g}</svg>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(t(isWR ? "sc_wr" : "sc_cb"))}">${g}${dots}${labels}</svg>`;
   el.onmousemove = e => {
     const dot = e.target.closest(".dot"); if (!dot) return hideTip();
     const p = arr.find(q => q.nflId === +dot.dataset.id);
-    showTip(e, `<b>${esc(p.name)}</b> <span class="m">${isWR ? "WR" : "CB"} · ${esc(p.team)}</span><br>${esc(p.archetype)}
-      <br><span class="m">${isWR ? "Burst" : "Burst allowed"}:</span> ${ord(p.pct_burst)} pct · <span class="m">${isWR ? "Burn" : "Burn allowed"}:</span> ${ord(p.pct_burn)} pct
-      <br><span class="m">${p.n_cut} cuts · ${p.n_vert} verticals · click to load</span>`);
+    showTip(e, `<b>${esc(p.name)}</b> <span class="m">${isWR ? "WR" : "CB"} · ${esc(p.team)}</span><br>${esc(t("arch")[p.archetype])}${p.tier === "limited" ? " · " + t("limited") : ""}
+      <br><span class="m">${t("burst")}:</span> ${p.pct_burst}${ord(p.pct_burst)} pct · <span class="m">${t("burn")}:</span> ${p.pct_burn}${ord(p.pct_burn)} pct
+      ${p.forty ? `<br><span class="m">${t("forty")}:</span> ${num(p.forty, 2)} s` : ""}<br><span class="m">${p.n_cut} ${t("cuts")} · ${p.n_vert} ${t("verts")} · ${t("click_load")}</span>`);
   };
   el.onmouseleave = hideTip;
-  el.onclick = e => { const dot = e.target.closest(".dot"); if (!dot) return; state[isWR ? "wr" : "cb"] = +dot.dataset.id; renderLab(); $("lab").scrollIntoView(); };
+  el.onclick = e => { const dot = e.target.closest(".dot"); if (!dot) return; hideTip(); if (isWR) openLab(+dot.dataset.id, state.cb); else openLab(state.wr, +dot.dataset.id); };
 }
 function renderScatters() { scatter($("scWR"), WR, state.wr, true); scatter($("scCB"), CB, state.cb, false); }
 
-// ---------- Validation ----------
+// ======================= Proof =======================
 function renderProof() {
   const V = D.validation, f = (fam, won) => V.by_won.find(r => r.family === fam && r.won === won);
-  const cw = f("cut", true), cl = f("cut", false), vw = f("vertical", true), vl = f("vertical", false);
-  const pc = v => Math.round(v * 100);
-  const bins = V.by_sep;
+  const cw = f("cut", true), cl = f("cut", false), vw = f("vertical", true), vl = f("vertical", false), bins = V.by_sep;
+  const pv = p => p < 0.001 ? "p < 0.001" : "p = " + num(p, p < 0.01 ? 3 : 2);
   $("tiles").innerHTML = `
-    <div class="card tile"><div class="big" style="color:var(--cut)">${pc(cw.completion)}% <small>vs ${pc(cl.completion)}%</small></div>
-      <div class="cap">Completion on targeted <b>breaking routes</b> when the WR wins the break vs when he loses it.</div>
-      <div class="foot">Split at the median Burst · n = ${cw.n + cl.n} targets · ${pv(cw.p_value)}</div></div>
-    <div class="card tile"><div class="big" style="color:var(--go)">${pc(vw.completion)}% <small>vs ${pc(vl.completion)}%</small></div>
-      <div class="cap">Completion on targeted <b>verticals</b> when the WR burns the corner vs when he doesn't.</div>
-      <div class="foot">Split at the median Burn · n = ${vw.n + vl.n} targets · ${pv(vw.p_value)}${vw.p_value > 0.05 ? " (not significant: directional only)" : ""}</div></div>
-    <div class="card tile"><div class="big">${pc(bins[0].mean)}% <small>→ ${pc(bins[bins.length - 1].mean)}%</small></div>
-      <div class="cap">Completion with <b>under 1 yd</b> of separation at release vs <b>3+ yd</b>.</div>
-      <div class="foot">n = ${bins.reduce((t, b) => t + b.size, 0)} targeted cut + vertical routes (of ${V.n_targeted} WR targets found)</div></div>`;
-  // Separation -> completion bars
-  const W = 520, H = 220, pad = { l: 40, r: 10, t: 16, b: 34 }, bw = (W - pad.l - pad.r) / bins.length;
-  const Y = v => pad.t + (1 - v / 0.8) * (H - pad.t - pad.b);
+    <div class="card tile"><div class="big" style="color:var(--cut)">${pct(cw.completion)} <small>vs ${pct(cl.completion)}</small></div><div class="cap">${t("t1")}</div>
+      <div class="foot">${t("split_med_b")} · n = ${cw.n + cl.n} ${t("targets")} · ${pv(cw.p_value)}</div></div>
+    <div class="card tile"><div class="big" style="color:var(--go)">${pct(vw.completion)} <small>vs ${pct(vl.completion)}</small></div><div class="cap">${t("t2")}</div>
+      <div class="foot">${t("split_med_n")} · n = ${vw.n + vl.n} ${t("targets")} · ${pv(vw.p_value)} ${vw.p_value > 0.05 ? t("not_sig") : ""}</div></div>
+    <div class="card tile"><div class="big">${pct(bins[0].mean)} <small>→ ${pct(bins[bins.length - 1].mean)}</small></div><div class="cap">${t("t3")}</div>
+      <div class="foot">${t("t3_foot", { n: bins.reduce((a, b) => a + b.size, 0) })}</div></div>`;
+  const W = 520, H = 220, pad = { l: 40, r: 10, t: 16, b: 34 }, bw = (W - pad.l - pad.r) / bins.length, Y = v => pad.t + (1 - v / 0.8) * (H - pad.t - pad.b);
   let g = "";
-  [0, 0.2, 0.4, 0.6, 0.8].forEach(v => g += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/>
-    <text x="${pad.l - 6}" y="${Y(v) + 3}" text-anchor="end" font-size="10" fill="var(--ink-3)">${v * 100}%</text>`);
+  [0, 0.2, 0.4, 0.6, 0.8].forEach(v => g += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${pad.l - 6}" y="${Y(v) + 3}" text-anchor="end" font-size="10" fill="var(--ink-3)">${Math.round(v * 100)}%</text>`);
   bins.forEach((b, i) => {
     const x = pad.l + i * bw + bw * 0.2, w = bw * 0.6, y = Y(b.mean);
-    g += `<path d="M${x},${Y(0)} V${y + 4} q0,-4 4,-4 h${w - 8} q4,0 4,4 V${Y(0)} Z" fill="var(--ink)" fill-opacity="${0.35 + 0.18 * i}"><title>${b.bin}: ${pc(b.mean)}% (n=${b.size})</title></path>
-      <text x="${x + w / 2}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${pc(b.mean)}%</text>
+    g += `<path d="M${x},${Y(0)} V${y + 4} q0,-4 4,-4 h${w - 8} q4,0 4,4 V${Y(0)} Z" fill="var(--ink)" fill-opacity="${0.35 + 0.18 * i}"><title>${b.bin}: ${pct(b.mean)} (n=${b.size})</title></path>
+      <text x="${x + w / 2}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${pct(b.mean)}</text>
       <text x="${x + w / 2}" y="${H - pad.b + 15}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${esc(b.bin)}</text>
       <text x="${x + w / 2}" y="${H - pad.b + 28}" text-anchor="middle" font-size="10" fill="var(--ink-3)">n=${b.size}</text>`;
   });
-  $("sepChart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Completion rate by separation at release">${g}</svg>`;
-  const r2 = m => (FIT[m].oos_r2 * 100).toFixed(1);
+  $("sepChart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(t("sep_title"))}">${g}</svg>`;
+  const r2 = m => num(FIT[m].oos_r2 * 100, 1);
   $("modelStats").innerHTML = `<div class="expect">
-      <div class="stat"><div class="k">Burst model</div><div class="v" style="color:var(--cut)">+${r2("burst")}%</div><div class="s">out-of-sample R² vs league mean · ${FIT.burst.n} cuts · λ=${FIT.burst.lambda}</div></div>
-      <div class="stat"><div class="k">Burn model</div><div class="v" style="color:var(--go)">+${r2("burn")}%</div><div class="s">out-of-sample R² vs league mean · ${FIT.burn.n} verticals · λ=${FIT.burn.lambda}</div></div></div>
-    <p style="margin-top:12px">A single route is noisy (a bad stem, a pick, a safety over the top), so a few percent of route-level variance is real but modest signal.
-      Knowing <b>who</b> runs the route and <b>who</b> covers it beats the league average on games the model never saw. Over 8 weeks, profiles are
-      still shrunk hard toward average: read them as scouting tendencies, not certainties.</p>`;
+      <div class="stat"><div class="k">Burst</div><div class="v" style="color:var(--cut)">+${r2("burst")} %</div><div class="s">${t("oos")} · ${FIT.burst.n} cuts · λ=${FIT.burst.lambda}</div></div>
+      <div class="stat"><div class="k">Burn</div><div class="v" style="color:var(--go)">+${r2("burn")} %</div><div class="s">${t("oos")} · ${FIT.burn.n} ${t("verts")} · λ=${FIT.burn.lambda}</div></div></div>
+    <p style="margin-top:12px;color:var(--ink-2);font-size:13.5px">${t("skill_txt")}</p>`;
 }
 
-// ---------- Tooltip ----------
+// ======================= Tooltip, i18n, theme, routing =======================
 const tip = $("tip");
 function showTip(e, html) {
   tip.innerHTML = html; tip.style.opacity = 1;
-  const r = tip.getBoundingClientRect();
-  let x = e.clientX + 14, y = e.clientY + 14;
+  const r = tip.getBoundingClientRect(); let x = e.clientX + 14, y = e.clientY + 14;
   if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
   if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
   tip.style.left = x + "px"; tip.style.top = y + "px";
 }
 function hideTip() { tip.style.opacity = 0; }
-
-renderBoard(); renderLab(); renderProof();
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderBoard);
+const isDark = () => { const th = document.documentElement.dataset.theme; return th ? th === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+function applyStatic() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-html]").forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+  $("methodList").innerHTML = t("method").map(li => `<li>${li.replace("{b}", B)}</li>`).join("");
+  $("tgLang").innerHTML = LANG === "fr" ? "<b>FR</b> <span>/ EN</span>" : "<b>EN</b> <span>/ FR</span>";
+  $("tgTheme").textContent = isDark() ? "☾ " + t("theme_dark") : "☀ " + t("theme_light");
+}
+$("tgLang").addEventListener("click", () => { LANG = LANG === "fr" ? "en" : "fr"; store.set("mm-lang", LANG); renderAll(); });
+$("tgTheme").addEventListener("click", () => { const next = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = next; store.set("mm-theme", next); renderAll(); });
+function route() {
+  const page = (location.hash || "#home").slice(1);
+  const valid = ["home", "lab", "plan", "landscape", "proof", "method"].includes(page) ? page : "home";
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("on", p.id === "page-" + valid));
+  document.querySelectorAll("nav.pages a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + valid));
+}
+addEventListener("hashchange", () => { route(); scrollTo(0, 0); });
+function renderAll() {
+  applyStatic(); renderSituation(); fillPlayers(); fillTeams();
+  renderHome(); renderLab(); renderPlan(); renderScatters(); renderProof();
+}
+// Ouverture : duel Saints–Steelers (prix du hackathon : le match de Paris 2026)
+state.wr = (WR.find(p => p.name === "Marquez Callaway") || WR[0]).nflId;
+state.cb = (CB.find(p => p.name === "Joe Haden") || CB[0]).nflId;
+renderAll(); route();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
 </script>
 </body>
 </html>

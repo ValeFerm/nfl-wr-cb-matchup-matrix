@@ -26,7 +26,7 @@ def _players(df, labels):
         out[c] = out[c].map(lambda v: html.unescape(v) if isinstance(v, str) else v)
     cols = ["nflId", "name", "team", "jerseyNumber", "height", "weight", "collegeName", "age", "archetype",
             "burst", "burn", "z_burst", "z_burn", "pct_burst", "pct_burn", "n_cut", "n_vert",
-            "raw_burst", "raw_burn"]
+            "raw_burst", "raw_burn", "tier", "forty", "combine_year"]
     out = out[cols].round({"burst": 3, "burn": 3, "z_burst": 2, "z_burn": 2, "raw_burst": 2, "raw_burn": 2})
     return json.loads(out.to_json(orient="records"))
 
@@ -47,7 +47,15 @@ def _route_paths(frames, routes, wr_ids):
     return paths
 
 
-def export(path, wr, cb, routes, frames, fit_info, validation, meta):
+def _with_draws(records, draws, side):
+    """Ajoute à chaque joueur ses B tirages bootstrap d'effets Burst / Burn (incertitude côté navigateur)."""
+    for i, r in enumerate(records):
+        r["draws"] = {m: np.round(d[side][:, i], 3).tolist() for m, d in draws.items()}
+    return records
+
+
+def export(path, wr, cb, routes, frames, fit_info, validation, meta, draws, completion, situation, forty):
+    wr, cb = wr.merge(forty, on="nflId", how="left"), cb.merge(forty, on="nflId", how="left")
     raw = {fam: routes[routes["family"] == fam] for fam in ("cut", "vertical")}
     for df, who in ((wr, "nflId"), (cb, "nflId_db")):
         df["raw_burst"] = df["nflId"].map(raw["cut"].groupby(who)["burst"].mean())
@@ -56,8 +64,12 @@ def export(path, wr, cb, routes, frames, fit_info, validation, meta):
         "meta": meta,
         "fit": {m: {k: float(v) for k, v in d.items()} for m, d in fit_info.items()},
         "validation": validation,
-        "wr": _players(wr, ["Complete threat", "Route technician", "Speed burner", "Scheme-dependent"]),
-        "cb": _players(cb, ["Exploitable both ways", "Stiff on breaks", "Lacks long speed", "Lockdown"]),
+        "completion": completion,
+        "situation": situation,
+        "wr": _with_draws(_players(wr, ["Complete threat", "Route technician", "Speed burner", "Scheme-dependent"]),
+                          draws, 0),
+        "cb": _with_draws(_players(cb, ["Exploitable both ways", "Stiff on breaks", "Lacks long speed", "Lockdown"]),
+                          draws, 1),
         "paths": _route_paths(frames, routes, set(wr["nflId"])),
     }
     path.parent.mkdir(exist_ok=True)

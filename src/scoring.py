@@ -6,6 +6,7 @@ from scipy.sparse.linalg import lsqr
 
 MIN_ROUTES = 15        # tracés cut + vertical minimum par joueur
 MIN_PER_FAMILY = 5     # au moins 5 cuts et 5 verticaux pour noter les deux axes
+LIMITED = (8, 3)       # palier « échantillon limité » affiché sur le site (effets déjà rétrécis par le ridge)
 LAMBDAS = [1, 2, 5, 10, 20, 50, 100, 200, 500]
 METRICS = {"burst": "cut", "burn": "vertical"}
 
@@ -65,10 +66,12 @@ def player_effects(routes):
     return profiles["WR"], profiles["CB"], fit_info
 
 
-def eligible(prof, players, teams):
+def eligible(prof, players, teams, min_routes=MIN_ROUTES, min_per_family=MIN_PER_FAMILY):
     """Seuil de volume, z-scores et percentiles (calculés parmi les éligibles), infos joueur."""
-    p = prof[(prof["n_cut"] + prof["n_vert"] >= MIN_ROUTES)
-             & (prof["n_cut"] >= MIN_PER_FAMILY) & (prof["n_vert"] >= MIN_PER_FAMILY)].copy()
+    p = prof[(prof["n_cut"] + prof["n_vert"] >= min_routes)
+             & (prof["n_cut"] >= min_per_family) & (prof["n_vert"] >= min_per_family)].copy()
+    full = (p["n_cut"] + p["n_vert"] >= MIN_ROUTES) & (p["n_cut"] >= MIN_PER_FAMILY) & (p["n_vert"] >= MIN_PER_FAMILY)
+    p["tier"] = np.where(full, "profiled", "limited")
     for m in METRICS:
         p[f"z_{m}"] = (p[m] - p[m].mean()) / p[m].std()
         p[f"pct_{m}"] = (p[m].rank(pct=True) * 100).round().astype(int)
