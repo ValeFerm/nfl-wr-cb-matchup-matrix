@@ -9,6 +9,7 @@ from matplotlib.colors import LinearSegmentedColormap
 SURFACE, INK, INK_2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df"
 CUT, VERT, NEUTRAL = "#2a78d6", "#eb6834", "#ecebe7"
 DIVERGING = LinearSegmentedColormap.from_list("cut_vs_vert", [VERT, NEUTRAL, CUT])
+STRONG_EDGE = 0.2  # avantage attendu, en écarts-types de route
 
 
 def _style(ax):
@@ -27,17 +28,28 @@ def _quadrant(ax, prof, title, xlabel, ylabel, corners, legend, n_labels=12):
     lead = prof["z_burst"] - prof["z_burn"]
     color = np.where(lead > 0, CUT, VERT)
     ax.scatter(prof["z_burn"], prof["z_burst"], s=46, c=color, edgecolor=SURFACE, linewidth=1.5, zorder=3)
-    # Étiquettes sélectives : les profils les plus marqués
+    lim = max(prof[["z_burst", "z_burn"]].abs().max().max() * 1.25, 2.5)
+    ax.set(xlim=(-lim, lim), ylim=(-lim, lim))
+    renderer = ax.figure.canvas.get_renderer()
+    placed = []
+    for (x, y, ha, va), text in zip([(-1, 1, "left", "top"), (1, 1, "right", "top"),
+                                     (-1, -1, "left", "bottom"), (1, -1, "right", "bottom")], corners):
+        t = ax.text(x * lim * 0.97, y * lim * 0.97, text, ha=ha, va=va, fontsize=9, color=INK_2, style="italic")
+        placed.append(t.get_window_extent(renderer))
+    # Étiquettes sélectives (profils les plus marqués), décalées verticalement en cas de collision
     extreme = (prof["z_burst"] ** 2 + prof["z_burn"] ** 2).nlargest(n_labels).index
     for i in extreme:
         r = prof.loc[i]
-        ax.annotate(r["name"], (r["z_burn"], r["z_burst"]), xytext=(5, 4), textcoords="offset points",
-                    fontsize=8, color=INK)
-    lim = max(prof[["z_burst", "z_burn"]].abs().max().max() * 1.15, 2.5)
-    ax.set(xlim=(-lim, lim), ylim=(-lim, lim))
-    for (x, y, ha, va), text in zip([(-1, 1, "left", "top"), (1, 1, "right", "top"),
-                                     (-1, -1, "left", "bottom"), (1, -1, "right", "bottom")], corners):
-        ax.text(x * lim * 0.97, y * lim * 0.97, text, ha=ha, va=va, fontsize=9, color=INK_2, style="italic")
+        right = r["z_burn"] < lim * 0.45
+        for k in range(7):
+            dy = 4 + (1 if k % 2 else -1) * ((k + 1) // 2) * 10
+            t = ax.annotate(r["name"], (r["z_burn"], r["z_burst"]), xytext=(5 if right else -5, dy),
+                            textcoords="offset points", ha="left" if right else "right", fontsize=8, color=INK)
+            box = t.get_window_extent(renderer)
+            if not any(box.overlaps(b) for b in placed):
+                break
+            t.remove()
+        placed.append(box)
     ax.set_title(title, loc="left", fontsize=12, color=INK, fontweight="bold")
     for c, lab in zip((CUT, VERT), legend):
         ax.scatter([], [], s=46, c=c, label=lab)
@@ -51,18 +63,18 @@ def hero_figure(wr, cb, adv_cut, adv_vert, path, top=10):
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.25], wspace=0.28)
 
     _quadrant(fig.add_subplot(gs[0]), wr, "1 · How each WR wins in man coverage",
-              "Burn: downfield yards gained on the CB per second (z)  →",
-              "Burst: separation gained at the break (z)  →",
+              "Burn: downfield yards gained on the CB per second (z, opp.-adjusted)  →",
+              "Burst: separation gained at the break (z, opp.-adjusted)  →",
               ["ROUTE TECHNICIANS", "COMPLETE THREATS", "SCHEME-DEPENDENT", "SPEED BURNERS"],
               ["stronger at the break", "stronger in a straight line"])
     _quadrant(fig.add_subplot(gs[1]), cb, "2 · Where each CB leaks separation",
-              "Burn allowed: beaten over the top (z)  →",
-              "Burst allowed: beaten on breaks (z)  →",
+              "Burn allowed: beaten over the top (z, opp.-adjusted)  →",
+              "Burst allowed: beaten on breaks (z, opp.-adjusted)  →",
               ["STIFF ON BREAKS", "EXPLOITABLE BOTH WAYS", "LOCKDOWN", "LACKS LONG SPEED"],
               ["more vulnerable on breaks", "more vulnerable over the top"])
 
     # Matrice : WR et CB les plus sollicités en man ; signe = famille de tracés recommandée
-    wr_top = wr.nlargest(top, "n_cut", keep="first").sort_values("z_burst", ascending=False)["name"]
+    wr_top = wr.assign(n=wr["n_cut"] + wr["n_vert"]).nlargest(top, "n").sort_values("z_burst", ascending=False)["name"]
     cb_top = cb.assign(n=cb["n_cut"] + cb["n_vert"]).nlargest(top, "n")["name"]
     edge = (adv_cut - adv_vert).loc[wr_top, cb_top]
     ax = fig.add_subplot(gs[2])
@@ -72,7 +84,7 @@ def hero_figure(wr, cb, adv_cut, adv_vert, path, top=10):
     for i in range(edge.shape[0]):
         for j in range(edge.shape[1]):
             call = "CUT" if edge.iat[i, j] > 0 else "GO"
-            weight = "bold" if best.iat[i, j] > 1 else "normal"   # duel nettement favorable au WR
+            weight = "bold" if best.iat[i, j] > STRONG_EDGE else "normal"   # duel nettement favorable au WR
             ax.text(j, i, call, ha="center", va="center", fontsize=8, color=INK, fontweight=weight)
     ax.set_xticks(range(len(cb_top)), cb_top, rotation=40, ha="right", fontsize=8.5, color=INK)
     ax.set_yticks(range(len(wr_top)), wr_top, fontsize=8.5, color=INK)
@@ -89,7 +101,8 @@ def hero_figure(wr, cb, adv_cut, adv_vert, path, top=10):
     cbar.set_label("← call verticals (GO)        call breaking routes (CUT) →", color=INK_2, fontsize=8.5)
     cbar.outline.set_visible(False)
     cbar.ax.tick_params(colors=INK_2, labelsize=8)
-    ax.text(0, -0.24, "Bold = expected WR edge > 1 SD. Man coverage only (Cover-0/1, 2-Man), 2021 Wk 1-8.",
+    ax.text(0, -0.24, f"Bold = expected WR edge > {STRONG_EDGE} route SD. Opponent-adjusted (ridge WR + CB). "
+            "Man coverage only (Cover-0/1, 2-Man), 2021 Wk 1-8.",
             transform=ax.transAxes, fontsize=8, color=INK_2)
 
     fig.suptitle("The WR–CB Matchup Matrix · Burst (win at the break) vs Burn (win with speed)",

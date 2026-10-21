@@ -12,3 +12,4 @@ __pycache__/
 # Markdown internes (consignes, notes) : seul le README est publié
 *.md
 !README.md
+outputs/sample/

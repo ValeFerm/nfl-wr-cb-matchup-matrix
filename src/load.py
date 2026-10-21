@@ -10,29 +10,35 @@ CACHE = ROOT / "cache"
 
 SNAP_EVENTS = ["ball_snap", "autoevent_ballsnap"]
 THROW_EVENTS = ["pass_forward", "autoevent_passforward"]
-TRACK_COLS = ["gameId", "playId", "nflId", "frameId", "playDirection", "x", "y", "s", "o", "dir", "event"]
+TRACK_COLS = ["gameId", "playId", "nflId", "frameId", "jerseyNumber", "team", "playDirection", "x", "y", "s", "o", "dir",
+              "event"]
 TRACK_DTYPES = {"gameId": "int64", "playId": "int32", "nflId": "float64", "frameId": "int16",
-                "x": "float32", "y": "float32", "s": "float32", "o": "float32", "dir": "float32"}
-POST_THROW_FRAMES = 5  # on garde 0,5 s après le lancer pour mesurer le burst d'un cut tardif
+                "jerseyNumber": "float32", "x": "float32", "y": "float32", "s": "float32", "o": "float32",
+                "dir": "float32"}
+POST_THROW_FRAMES = 8  # marge après le lancer pour les fenêtres glissantes (direction sur 0,8 s)
 
 
 def load_meta():
-    plays = pd.read_csv(DATA / "plays.csv", usecols=["gameId", "playId", "passResult", "pff_passCoverage",
-                                                    "pff_passCoverageType", "possessionTeam", "defensiveTeam"])
+    plays = pd.read_csv(DATA / "plays.csv", usecols=["gameId", "playId", "playDescription", "passResult",
+                                                    "pff_passCoverage", "pff_passCoverageType", "possessionTeam",
+                                                    "defensiveTeam"])
     pff = pd.read_csv(DATA / "pffScoutingData.csv", usecols=["gameId", "playId", "nflId", "pff_role"])
-    players = pd.read_csv(DATA / "players.csv", usecols=["nflId", "officialPosition", "displayName"])
+    players = pd.read_csv(DATA / "players.csv", usecols=["nflId", "officialPosition", "displayName", "height", "weight",
+                                                        "birthDate", "collegeName"])
     return plays, pff, players
 
 
 def build_roster(plays, pff, players, sample=None, seed=0):
-    """Actions en man + joueurs utiles : WR en route (attaque) et tous les défenseurs en couverture."""
+    """Actions en man + tous les coureurs de route (WR/TE/RB) et tous les défenseurs en couverture.
+
+    Les TE/RB servent uniquement à l'assignation des duels (un CB peut suivre un TE) ; l'analyse garde les WR.
+    """
     man = plays[plays["pff_passCoverageType"] == "Man"]
     if sample:
         man = man.sample(sample, random_state=seed)
-    roster = pff.merge(man[["gameId", "playId"]]).merge(players)
-    is_wr = (roster["pff_role"] == "Pass Route") & (roster["officialPosition"] == "WR")
-    is_db = roster["pff_role"] == "Coverage"
-    roster = roster[is_wr | is_db].assign(side=np.where(is_wr[is_wr | is_db], "O", "D"))
+    roster = pff.merge(man[["gameId", "playId"]]).merge(players[["nflId", "officialPosition"]])
+    roster = roster[roster["pff_role"].isin(["Pass Route", "Coverage"])]
+    roster = roster.assign(side=np.where(roster["pff_role"] == "Pass Route", "O", "D"))
     return man, roster[["gameId", "playId", "nflId", "side", "officialPosition"]]
 
 
@@ -71,6 +77,12 @@ def load_tracking(man, roster):
                      t_throw=(trk["throw"] - trk["snap"]).astype("int16"),
                      nflId=trk["nflId"].astype("int64"))
     return trk.drop(columns=["playDirection", "event", "frameId", "snap", "throw"]).reset_index(drop=True)
+
+
+def player_teams(trk):
+    """Équipe et numéro les plus fréquents par joueur (un joueur peut changer d'équipe en cours de saison)."""
+    return (trk.groupby(["nflId", "team", "jerseyNumber"]).size().rename("n").reset_index()
+            .sort_values("n").drop_duplicates("nflId", keep="last").drop(columns="n"))
 
 
 def get_tracking(sample=None):

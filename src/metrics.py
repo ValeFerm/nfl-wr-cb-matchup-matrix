@@ -1,4 +1,4 @@
-"""Duels WR-CB en man coverage, détection des cuts et métriques Burst / Burn (100 % vectorisé)."""
+"""Duels WR-CB en man coverage, détection des cuts et métriques Burst / Burn (100 % vectorisé, sans boucle)."""
 import numpy as np
 import pandas as pd
 
@@ -22,31 +22,37 @@ ROUTE = ["gameId", "playId", "nflId"]
 
 
 def assign_matchups(trk):
-    """Pour chaque WR, déduit le défenseur en man (le plus proche puis stable). Garde les duels contre un CB."""
-    off = trk.loc[trk["side"] == "O", ["gameId", "playId", "nflId", "t", "t_throw", "x", "y", "s", "o", "dir", "los_x"]]
-    de = trk.loc[trk["side"] == "D", ["gameId", "playId", "nflId", "t", "x", "y", "officialPosition"]]
+    """Déduit les duels man : paire coureur de route / défenseur *mutuellement* la plus proche sur la 1re seconde,
+    restée stable jusqu'au lancer. Un défenseur ne peut suivre qu'un seul joueur (et inversement). Garde WR vs CB."""
+    off = trk.loc[trk["side"] == "O", ["gameId", "playId", "nflId", "officialPosition", "t", "t_throw",
+                                       "x", "y", "s", "o", "dir", "los_x"]]
+    de = trk.loc[trk["side"] == "D", ["gameId", "playId", "nflId", "officialPosition", "t", "x", "y"]]
     pairs = off.merge(de, on=["gameId", "playId", "t"], suffixes=("", "_db"))
     pairs["d"] = np.hypot(pairs["x"] - pairs["x_db"], pairs["y"] - pairs["y_db"]).astype("float32")
 
-    # Défenseur assigné = plus petite distance moyenne sur la 1re seconde
+    # Distance moyenne sur la 1re seconde, puis plus proche voisin mutuel (appariement 1-1 vectorisé)
     early = (pairs[pairs["t"] <= EARLY_FRAMES].groupby(ROUTE + ["nflId_db"], as_index=False)["d"].mean()
-             .sort_values("d").drop_duplicates(ROUTE)[ROUTE + ["nflId_db"]])
+             .sort_values("d"))
+    best_db = early.drop_duplicates(ROUTE)
+    best_off = early.drop_duplicates(["gameId", "playId", "nflId_db"])
+    assigned = best_db.merge(best_off, on=ROUTE + ["nflId_db", "d"])[ROUTE + ["nflId_db"]]
 
     # Stabilité : part des frames (jusqu'au lancer) où l'assigné reste le défenseur le plus proche
     pre = pairs[pairs["t"] <= pairs["t_throw"]]
     nearest = pre.sort_values("d").drop_duplicates(ROUTE + ["t"])[ROUTE + ["t", "nflId_db"]]
-    nearest = nearest.merge(early, on=ROUTE, suffixes=("", "_assigned"))
+    nearest = nearest.merge(assigned, on=ROUTE, suffixes=("", "_assigned"))
     stab = ((nearest["nflId_db"] == nearest["nflId_db_assigned"]).groupby([nearest[c] for c in ROUTE]).mean()
             .rename("stability").reset_index())
 
-    duel = pairs.merge(early, on=ROUTE + ["nflId_db"])
+    duel = pairs.merge(assigned, on=ROUTE + ["nflId_db"])
     mean_d = duel[duel["t"] <= duel["t_throw"]].groupby(ROUTE)["d"].mean().rename("mean_dist").reset_index()
-    quality = early.merge(stab, on=ROUTE).merge(mean_d, on=ROUTE)
+    quality = assigned.merge(stab, on=ROUTE).merge(mean_d, on=ROUTE)
     ok = quality[(quality["stability"] >= MATCH_STABILITY) & (quality["mean_dist"] <= MATCH_MAX_DIST)]
 
     duel = duel.merge(ok[ROUTE + ["stability"]], on=ROUTE)
-    duel = duel[duel["officialPosition"] == "CB"].rename(columns={"d": "sep"})
-    return duel.drop(columns=["y_db", "officialPosition"]).sort_values(ROUTE + ["t"]).reset_index(drop=True)
+    duel = duel[(duel["officialPosition"] == "WR") & (duel["officialPosition_db"] == "CB")].rename(columns={"d": "sep"})
+    return (duel.drop(columns=["officialPosition", "officialPosition_db"])
+            .sort_values(ROUTE + ["t"]).reset_index(drop=True))
 
 
 def _angle_between(ux, uy, vx, vy):
@@ -56,12 +62,10 @@ def _angle_between(ux, uy, vx, vy):
 
 def route_features(duel):
     """Une ligne par route : famille (cut / vertical), Burst et Burn Separation."""
-    df = duel.copy()
-    g = df.groupby(ROUTE, sort=False)
-
     # Vecteur direction (convention NGS : 0° = +y, sens horaire), lissé sur 3 frames
-    rad = np.radians(df["dir"].to_numpy())
-    df["vx"], df["vy"] = np.sin(rad), np.cos(rad)
+    rad = np.radians(duel["dir"].to_numpy())
+    df = duel.assign(vx=np.sin(rad), vy=np.cos(rad))
+    g = df.groupby(ROUTE, sort=False)
     for c in ("vx", "vy"):
         df[c] = (g[c].shift(1).fillna(df[c]) + df[c] + g[c].shift(-1).fillna(df[c])) / 3
 
@@ -71,9 +75,11 @@ def route_features(duel):
     df["sep_fut"] = fut["sep"]
     df["depth"] = df["x"] - df["los_x"]
 
-    # Cut : rupture de direction + rotation du corps sur 0,8 s, à vitesse et profondeur suffisantes, avant le lancer
+    # Cut : rupture de direction + rotation du corps sur 0,8 s, à vitesse et profondeur suffisantes.
+    # La fenêtre doit se terminer avant le lancer : on mesure le duel tel que le QB le voit, sans fuite
+    # (après le lancer, un pass breakup rapproche mécaniquement le CB et biaiserait le Burst).
     cand = ((df["d_dir"] >= CUT_DIR_DEG) & (df["d_o"] >= CUT_O_DEG) & (df["s"] >= CUT_MIN_SPEED)
-            & (df["t"] >= RELEASE_FRAMES) & (df["depth"] >= CUT_MIN_DEPTH) & (df["t"] <= df["t_throw"]))
+            & (df["t"] >= RELEASE_FRAMES) & (df["depth"] >= CUT_MIN_DEPTH) & (df["t"] + WIN <= df["t_throw"]))
     cuts = (df[cand].sort_values("d_dir", ascending=False).drop_duplicates(ROUTE)
             .assign(burst=lambda c: c["sep_fut"] - c["sep"])
             [ROUTE + ["t", "d_dir", "burst"]].rename(columns={"t": "t_cut", "d_dir": "cut_angle"}))
