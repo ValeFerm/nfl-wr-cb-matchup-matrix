@@ -9,8 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
-  // Thème avant le premier rendu (évite le flash) : choix mémorisé, sinon préférence système
-  try { const th = localStorage.getItem("mm-theme"); if (th) document.documentElement.dataset.theme = th; } catch (e) {}
+  // Thème avant le premier rendu (évite le flash)
+  // Thème clair par défaut ; le choix de l'utilisateur est mémorisé
+  try { document.documentElement.dataset.theme = localStorage.getItem("mm-theme") || "light"; } catch (e) { document.documentElement.dataset.theme = "light"; }
 </script>
 <style>
 :root {
@@ -97,7 +98,9 @@ select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid
 .situation { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 12px 14px; margin-bottom: 16px; }
 .situation .tag { font: 700 13px/1 Oswald, sans-serif; letter-spacing: .08em; text-transform: uppercase; background: var(--ink); color: var(--surface);
   border-radius: 6px; padding: 8px 10px; align-self: center; }
-.situation .sum { margin-left: auto; align-self: center; font-size: 13px; color: var(--ink-2); max-width: 320px; }
+.situation .sum { margin-left: auto; align-self: center; font-size: 13px; color: var(--ink-2); max-width: 380px; }
+.v-sit { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-size: 12.5px; color: var(--ink-2); padding-bottom: 10px; border-bottom: 1px dashed var(--line-2); }
+.v-sit b { font: 700 18px Oswald, sans-serif; color: var(--ink); letter-spacing: .04em; }
 .situation .sum b { color: var(--ink); }
 
 /* ---------- Home ---------- */
@@ -156,6 +159,9 @@ body.is-event footer { color: #8c8572; }
 .ev-team.pit .ev-abbr { background: linear-gradient(180deg, #fff3c4 0%, #ffb612 50%, #b37a00 100%); -webkit-background-clip: text; background-clip: text; }
 .ev-name { font: 600 clamp(15px, 2vw, 20px)/1.1 Oswald, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: #f3efe6; }
 .ev-name b { color: #e6c66f; } .ev-team.pit .ev-name b { color: #ffb612; }
+.ev-row { display: flex; align-items: center; gap: clamp(8px, 1.6vw, 18px); }
+.ev-logo { width: clamp(56px, 9vw, 120px); height: auto; filter: drop-shadow(0 0 22px rgba(243,217,139,.35)); }
+.ev-brand { display: block; height: 64px; width: auto; margin-bottom: 14px; }
 .ev-tag { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #8c8572; }
 .ev-vs { text-align: center; }
 .ev-vs-txt { font: 700 22px/1 Oswald, sans-serif; letter-spacing: .2em; color: #e9d9ae; margin-top: 10px; }
@@ -172,6 +178,7 @@ body.is-event footer { color: #8c8572; }
   border: 1px solid rgba(211,188,141,.22); cursor: pointer; transition: transform .15s ease, border-color .15s ease; }
 .ev-key:hover { transform: translateY(-2px); border-color: rgba(243,217,139,.6); }
 .ev-key .kn { font: 700 40px/1 Oswald, sans-serif; color: rgba(211,188,141,.22); position: absolute; right: 12px; top: 8px; }
+.ev-key .kt .tl { width: 18px; height: 18px; }
 .ev-key .kt { font: 600 11px/1.2 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #e6c66f; }
 .ev-key.pit .kt { color: #ffb612; }
 .ev-key .kh { font: 700 19px/1.15 Oswald, sans-serif; text-transform: uppercase; margin: 8px 0 6px; color: #f3efe6; }
@@ -194,6 +201,10 @@ body.is-event footer { color: #8c8572; }
 .rk .n { font: 700 14px Oswald, sans-serif; color: var(--ink-3); }
 .rk .who { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rk .who small { color: var(--ink-3); font-weight: 500; }
+.tl { width: 18px; height: 18px; vertical-align: -4px; margin-right: 6px; object-fit: contain; }
+.h-logo { width: 30px; height: 30px; vertical-align: -6px; margin-right: 8px; }
+.p-logo { width: 48px; height: 48px; margin-left: auto; align-self: flex-start; object-fit: contain; }
+.board thead th .tl { width: 26px; height: 26px; margin: 0 0 2px; }
 .pill { font: 700 12px/1 Oswald, sans-serif; letter-spacing: .04em; text-align: center; padding: 6px 4px; border-radius: 5px; color: #fff; white-space: nowrap; }
 .pill.cut { background: var(--cut); } .pill.go { background: var(--go); }
 .meter { height: 8px; background: var(--neutral); border-radius: 4px; position: relative; }
@@ -357,11 +368,12 @@ footer { padding: 10px 0 40px; color: var(--ink-3); font-size: 13px; }
         </g>
       </svg>
       <div class="ev-inner">
+        <img class="ev-brand" src="assets/event-logo.png" alt="NFL Paris Game" onerror="this.remove()">
         <div class="ev-ticket"><span data-i18n="ev_game"></span><span data-i18n="ev_week"></span><span data-i18n="ev_date"></span><span>Stade de France · Saint-Denis</span></div>
         <div class="ev-score">
-          <div class="ev-team no"><div class="ev-abbr">NO</div><div class="ev-name">New Orleans <b>Saints</b></div><div class="ev-tag" data-i18n="ev_home"></div></div>
+          <div class="ev-team no"><div class="ev-row"><img class="ev-logo" src="assets/logos/NO_big.png" alt="New Orleans Saints"><div class="ev-abbr">NO</div></div><div class="ev-name">New Orleans <b>Saints</b></div><div class="ev-tag" data-i18n="ev_home"></div></div>
           <div class="ev-vs"><div class="ev-count" id="evCount"></div><div class="ev-vs-txt">⚜ VS ⚜</div></div>
-          <div class="ev-team pit"><div class="ev-abbr">PIT</div><div class="ev-name">Pittsburgh <b>Steelers</b></div><div class="ev-tag" data-i18n="ev_away"></div></div>
+          <div class="ev-team pit"><div class="ev-row"><div class="ev-abbr">PIT</div><img class="ev-logo" src="assets/logos/PIT_big.png" alt="Pittsburgh Steelers"></div><div class="ev-name">Pittsburgh <b>Steelers</b></div><div class="ev-tag" data-i18n="ev_away"></div></div>
         </div>
         <p class="ev-lede" data-i18n-html="ev_lede"></p>
       </div>
@@ -447,6 +459,7 @@ const byId = (arr, id) => arr.find(p => p.nflId === id);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const logo = (tm, cls = "tl") => `<img class="${cls}" src="assets/logos/${tm}.png" alt="${tm}" loading="lazy" onerror="this.remove()">`;
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 
 // ======================= i18n =======================
@@ -470,8 +483,9 @@ const I18N = {
     proof_eyebrow: "Validation", proof_sub: "The metrics only matter if they turn into catches. Each throw was matched to its intended receiver (play-by-play text).",
     method_eyebrow: "How it works · assumptions · limits",
     wr: "Wide receiver", cb: "Cornerback (in man)", random: "↻ Random matchup", your_off: "Your offense", opp_def: "Opponent defense",
+    obj_success: "Success rate", row_success: "Success rate (gain ≥ {p}% of distance = {n} yd)",
     sit: "Situation", down: "Down", togo: "Yards to go", ball: "Ball on", objective: "Optimize", obj_auto: "Auto", obj_cmp: "Completion %", obj_conv: "1st-down %", obj_yds: "Expected yards",
-    own: "Own", opp: "Opp", sum_auto: "On {d} down the tool maximizes <b>{o}</b>.", sum_manual: "The tool maximizes <b>{o}</b>.",
+    own: "Own", opp: "Opp", sum_auto: "On {d} down the tool maximizes <b>{o}</b> (success = 40% of the distance on 1st down, 60% on 2nd, 100% on 3rd/4th).", sum_manual: "The tool maximizes <b>{o}</b>.",
     downs: ["1st", "2nd", "3rd", "4th"],
     call_cut: "Break it off", call_go: "Go vertical", routes_cut: "outs, comebacks, digs, slants, curls", routes_go: "go / fade, seam, deep post stem",
     the_call: "The call", split_cap: "Share of {b} simulations (games resampled, model refit) in which each call is the better one",
@@ -514,7 +528,7 @@ const I18N = {
       "<b>Cut</b> = direction of travel turns ≥ 40° and the body turns ≥ 25° within 0.8 s, at ≥ 2 yd/s, ≥ 2 yd past the line, the whole window ending <i>before</i> the throw. <b>Burst</b> = change in WR–CB distance over that window.",
       "<b>Vertical</b> = no cut, ≥ 7 yd deep at the throw, within 30° of straight downfield. <b>Burn</b> = yards per second the WR gains on the CB downfield while running straight at ≥ 5 yd/s.",
       "<b>Opponent-adjusted profiles</b>: ridge regression route = league mean + WR effect + CB effect, penalty chosen by cross-validation across games. ≥ 15 cut + vertical reps (≥ 5 each) = profiled; ≥ 8 (≥ 3 each) = limited sample, shrunk harder toward average.",
-      "<b>Success probability</b>: a logistic model on targeted routes links Burst (cuts) and Burn (verticals) to completion, averaged over rep-to-rep noise around the matchup's expected value. 1st-down probability and expected yards add the league distribution of yards after a completed cut or vertical in man coverage, capped by the distance to the goal line.",
+      "<b>Success probability</b>: a logistic model on targeted routes links Burst (cuts) and Burn (verticals) to completion, averaged over rep-to-rep noise around the matchup's expected value. Success rate (gain ≥ 40% / 60% / 100% of the distance on 1st / 2nd / 3rd–4th down, i.e. the 1st-down probability on 3rd and 4th) and expected yards add the league distribution of yards after a completed cut or vertical in man coverage, capped by the distance to the goal line.",
       "<b>Simulation percentages</b>: games are resampled with replacement and the whole model refit {b} times. \"CUT 72%\" means breaking routes are the better call in 72% of those simulations; \"best in 64%\" means that corner is the best target (or assignment) in 64% of them.",
       "<b>40-yard dash</b>: NFL Combine times from nflverse (public data), matched by name and college. Shown for context, not used by the model.",
       "<b>Limits</b>: 8 weeks of data, 2021 rosters, geometric route families (no route labels in the data), targets parsed from play-by-play text, league-wide yard distributions (not player-specific)."
@@ -541,8 +555,9 @@ const I18N = {
     proof_eyebrow: "Validation", proof_sub: "Les métriques ne comptent que si elles se transforment en réceptions. Chaque passe a été reliée à son receveur visé (texte du play-by-play).",
     method_eyebrow: "Fonctionnement · hypothèses · limites",
     wr: "Receveur (WR)", cb: "Cornerback (en man)", random: "↻ Duel au hasard", your_off: "Votre attaque", opp_def: "Défense adverse",
+    obj_success: "Taux de réussite", row_success: "Taux de réussite (gain ≥ {p} % de la distance = {n} yd)",
     sit: "Situation", down: "Down", togo: "Yards à gagner", ball: "Ballon sur", objective: "Optimiser", obj_auto: "Auto", obj_cmp: "% de complétion", obj_conv: "Conversion 1er down", obj_yds: "Yards attendus",
-    own: "Nos", opp: "Leurs", sum_auto: "Sur {d} down, l'outil maximise <b>{o}</b>.", sum_manual: "L'outil maximise <b>{o}</b>.",
+    own: "Nos", opp: "Leurs", sum_auto: "Sur {d} down, l'outil maximise <b>{o}</b> (réussite = 40 % de la distance en 1er down, 60 % en 2e, 100 % en 3e/4e).", sum_manual: "L'outil maximise <b>{o}</b>.",
     downs: ["1er", "2e", "3e", "4e"],
     call_cut: "Tracés à cassure", call_go: "Attaque verticale", routes_cut: "outs, comebacks, digs, slants, curls", routes_go: "go / fade, seam, post profond",
     the_call: "L'appel", split_cap: "Part des {b} simulations (matchs rééchantillonnés, modèle réajusté) où chaque appel est le meilleur",
@@ -585,7 +600,7 @@ const I18N = {
       "<b>Cut</b> = la direction tourne de ≥ 40° et le corps de ≥ 25° en 0,8 s, à ≥ 2 yd/s, ≥ 2 yd au-delà de la ligne, fenêtre terminée <i>avant</i> le lancer. <b>Burst</b> = variation de la distance WR–CB sur cette fenêtre.",
       "<b>Vertical</b> = pas de cut, ≥ 7 yd de profondeur au lancer, à moins de 30° de l'axe. <b>Burn</b> = yards par seconde gagnés vers l'avant sur le CB en ligne droite à ≥ 5 yd/s.",
       "<b>Profils ajustés à l'adversaire</b> : régression ridge route = moyenne ligue + effet WR + effet CB, pénalité choisie par validation croisée sur les matchs. ≥ 15 tracés cut + vertical (≥ 5 de chaque) = profilé ; ≥ 8 (≥ 3 de chaque) = échantillon limité, plus fortement ramené vers la moyenne.",
-      "<b>Probabilité de réussite</b> : un modèle logistique sur les routes ciblées relie le Burst (cuts) et le Burn (verticaux) à la complétion, moyenné sur le bruit d'une répétition à l'autre. La probabilité de 1er down et les yards attendus ajoutent la distribution ligue des yards après une réception sur cut ou vertical en man, plafonnée par la distance à l'en-but.",
+      "<b>Probabilité de réussite</b> : un modèle logistique sur les routes ciblées relie le Burst (cuts) et le Burn (verticaux) à la complétion, moyenné sur le bruit d'une répétition à l'autre. Le taux de réussite (gain ≥ 40 % / 60 % / 100 % de la distance en 1er / 2e / 3e–4e down, soit la probabilité de 1er down en 3e et 4e) et les yards attendus ajoutent la distribution ligue des yards après une réception sur cut ou vertical en man, plafonnée par la distance à l'en-but.",
       "<b>Pourcentages de simulation</b> : les matchs sont rééchantillonnés avec remise et tout le modèle réajusté {b} fois. « CUT 72 % » signifie que les tracés cassés sont le meilleur appel dans 72 % de ces simulations ; « meilleur dans 64 % » signifie que ce corner est la meilleure cible (ou affectation) dans 64 % d'entre elles.",
       "<b>40 yards</b> : temps du Combine NFL issus de nflverse (données publiques), appariés par nom et université. Affichés pour le contexte, non utilisés par le modèle.",
       "<b>Limites</b> : 8 semaines de données, effectifs 2021, familles de tracés géométriques (pas d'étiquettes de route dans les données), cibles extraites du texte du play-by-play, distributions de yards à l'échelle de la ligue (pas par joueur)."
@@ -611,15 +626,17 @@ function pComplete(fam, metric, b) {  // b = tirage bootstrap (modèle de compl�
   return GH.reduce((acc, [z, w]) => acc + w * sigm(b0 + b1 * (metric + sd * z)), 0);
 }
 const state = { down: 3, togo: 7, toGoal: 50, objective: "auto", wr: null, cb: null, off: "NO", def: "PIT" };
-const objectiveKey = () => state.objective !== "auto" ? state.objective : (state.down >= 3 ? "conv" : "yds");
+const objectiveKey = () => state.objective !== "auto" ? state.objective : "conv";
 // Yards par famille (ligue, man) : P(gain ≥ yards à gagner | complétée) et E[min(gain, distance à l'en-but)]
+const SUCCESS = { 1: 0.4, 2: 0.6, 3: 1, 4: 1 };  // définition standard du taux de réussite selon le down
+const needYards = () => Math.min(Math.ceil(state.togo * SUCCESS[state.down]), state.toGoal);
 function yardStatsOf(ys) {
-  const need = Math.min(state.togo, state.toGoal);
+  const need = needYards();
   return { conv: ys.filter(y => y >= need).length / ys.length, eyds: ys.reduce((a, y) => a + Math.min(y, state.toGoal), 0) / ys.length };
 }
 const ysCache = {};  // par situation : estimation + chaque tirage bootstrap (yards rééchantillonnés)
 function yardTable() {
-  const k = state.togo + "|" + state.toGoal;
+  const k = state.down + "|" + state.togo + "|" + state.toGoal;
   if (!ysCache[k]) ysCache[k] = {
     est: { cut: yardStatsOf(SIT.cut.yards), go: yardStatsOf(SIT.vertical.yards) },
     draws: Array.from({ length: B }, (_, b) => ({ cut: yardStatsOf(SIT.draws.yards.cut[b]), go: yardStatsOf(SIT.draws.yards.vertical[b]) }))
@@ -657,7 +674,9 @@ function pickRates(w, cbs, maximize) {
   return wins.map(x => x / B);
 }
 const fmtObj = (key, v) => key === "yds" ? num(v, 1) + " yd" : pct(v);
-const objLabel = key => t({ cmp: "obj_cmp", conv: "obj_conv", yds: "obj_yds" }[key]);
+const objLabel = key => key === "conv" && state.down <= 2 ? t("obj_success") : t({ cmp: "obj_cmp", conv: "obj_conv", yds: "obj_yds" }[key]);
+const convRowLabel = () => state.down <= 2 ? t("row_success", { p: Math.round(SUCCESS[state.down] * 100), n: needYards() }) : t("row_conv");
+const ballLabel = v => ({ 80: `${t("own")} 20`, 65: `${t("own")} 35`, 50: "50", 35: `${t("opp")} 35`, 20: `${t("opp")} 20`, 10: `${t("opp")} 10` }[v]);
 
 // ======================= Situation bar =======================
 function renderSituation() {
@@ -667,7 +686,7 @@ function renderSituation() {
     <div class="field sm"><label>${t("down")}</label><select data-k="down">${downs.map((d, i) => `<option value="${i + 1}">${d}</option>`).join("")}</select></div>
     <div class="field sm"><label>${t("togo")}</label><select data-k="togo">${[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20].map(v => `<option>${v}</option>`).join("")}</select></div>
     <div class="field sm"><label>${t("ball")}</label><select data-k="toGoal">${ballOpts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></div>
-    <div class="field sm"><label>${t("objective")}</label><select data-k="objective">${["auto", "cmp", "conv", "yds"].map(o => `<option value="${o}">${t("obj_" + o)}</option>`).join("")}</select></div>
+    <div class="field sm"><label>${t("objective")}</label><select data-k="objective">${["auto", "cmp", "conv", "yds"].map(o => `<option value="${o}">${o === "conv" || o === "cmp" || o === "yds" ? objLabel(o) : t("obj_auto")}</option>`).join("")}</select></div>
     <div class="sum">${state.objective === "auto" ? t("sum_auto", { d: downs[state.down - 1], o: objLabel(objectiveKey()) }) : t("sum_manual", { o: objLabel(objectiveKey()) })}</div>`;
   document.querySelectorAll("[data-sit]").forEach(el => { el.innerHTML = html; el.querySelectorAll("select").forEach(s => { s.value = String(state[s.dataset.k]); }); });
 }
@@ -695,7 +714,7 @@ function playerTop(p, pos) {
   const n = p.jerseyNumber != null ? Math.round(p.jerseyNumber) : "–";
   return `<div class="p-top"><div class="jersey">${n}</div><div style="min-width:0"><h3 class="p-name">${esc(p.name)}</h3>
     <div class="p-meta"><span class="p-pos">${pos} · ${esc(p.team)}</span> · ${bio(p)}</div>
-    <div>${fortyTag(p)}${badge(p.archetype)}${p.tier === "limited" ? `<span class="limited">${t("limited")}</span>` : ""}</div></div></div>`;
+    <div>${fortyTag(p)}${badge(p.archetype)}${p.tier === "limited" ? `<span class="limited">${t("limited")}</span>` : ""}</div></div>${logo(p.team, "p-logo")}</div>`;
 }
 function renderWR(w) {
   $("cardWR").innerHTML = playerTop(w, "WR") + `<div class="p-body">
@@ -751,11 +770,12 @@ function renderVerdict(w, c) {
   const cutW = Math.round(r.shareCut * 100), goW = 100 - cutW, pc = n => n + (LANG === "fr" ? " %" : "%");
   const cell = (k, fam, f) => `<td class="${r[fam][k] >= r[fam === "cut" ? "go" : "cut"][k] ? "win" : ""}">${f(r[fam][k])}</td>`;
   const row = (k, label, f) => `<tr class="${k === key ? "obj" : ""}"><td>${label}</td>${cell(k, "cut", f)}${cell(k, "go", f)}</tr>`;
-  v.innerHTML = `<div><div class="eyebrow">${t("the_call")}</div><p class="v-call">${go ? t("call_go") : t("call_cut")}</p><p class="v-routes">${go ? t("routes_go") : t("routes_cut")}</p></div>
+  v.innerHTML = `<div class="v-sit"><b>${t("downs")[state.down - 1]} &amp; ${state.togo}</b><span>${t("ball")} ${ballLabel(state.toGoal)}</span><span>${t("objective")} : ${objLabel(key)}</span></div>
+    <div><div class="eyebrow">${t("the_call")}</div><p class="v-call">${go ? t("call_go") : t("call_cut")}</p><p class="v-routes">${go ? t("routes_go") : t("routes_cut")}</p></div>
     <div><div class="split"><div class="c" style="width:${cutW}%;padding:${cutW ? "0 10px" : "0"}">${cutW >= 14 ? "CUT " + pc(cutW) : ""}</div><div class="g" style="width:${goW}%;padding:${goW ? "0 10px" : "0"}">${goW >= 14 ? "GO " + pc(goW) : ""}</div></div>
       <div class="split-cap">${t("split_cap", { b: B })} · <b>${t("conf")[r.conf]}</b></div></div>
     <table class="cmp"><thead><tr><th></th><th class="c">${t("col_cut")}</th><th class="g">${t("col_go")}</th></tr></thead><tbody>
-      ${row("cmp", t("row_cmp"), x => pct(x))}${row("conv", t("row_conv"), x => pct(x))}${row("yds", t("row_yds"), x => num(x, 1))}
+      ${row("cmp", t("row_cmp"), x => pct(x))}${row("conv", convRowLabel(), x => pct(x))}${row("yds", t("row_yds"), x => num(x, 1))}
       <tr><td>${t("row_int")}</td><td>${pct(SIT.cut.int_rate)}</td><td>${pct(SIT.vertical.int_rate)}</td></tr>
       <tr><td>${t("row_metric")}</td><td>${sgn(r.mC)}</td><td>${num(r.mG, 2)}</td></tr>
     </tbody></table>
@@ -766,7 +786,7 @@ function renderVerdict(w, c) {
 function rankList(items, capTarget) {
   return `<div class="rk-cap"><span>#</span><span>${capTarget}</span><span>${t("cap_call")}</span><span class="mcol">${t("cap_best_long")}</span><span></span></div>
     <div class="rank">${items.map((x, i) => `<div class="rk ${i === 0 ? "best" : ""}" data-w="${x.w.nflId}" data-c="${x.c.nflId}" role="button" tabindex="0">
-      <span class="n">${i + 1}</span><span class="who">${esc(x.c.name)} <small>${esc(x.c.team)}${x.c.tier === "limited" ? " · " + t("limited") : ""}</small></span>
+      <span class="n">${i + 1}</span><span class="who">${logo(x.c.team)}${esc(x.c.name)} <small>${esc(x.c.team)}${x.c.tier === "limited" ? " · " + t("limited") : ""}</small></span>
       <span class="pill ${x.call}">${x.call === "cut" ? "CUT" : "GO"} · ${fmtObj(x.key, x.val)}</span>
       <span class="meter"><i style="width:${Math.round(x.rate * 100)}%;${i === 0 ? "background:var(--good)" : ""}"></i></span><span class="val">${pct(x.rate)}</span></div>`).join("")}</div>`;
 }
@@ -778,7 +798,7 @@ function rankItems(w, cbs, maximize) {  // attaque : corner à viser (max) ; dé
 function renderHome() {
   const side = (offTeam, defTeam, title) => {
     const ws = WR.filter(p => p.team === offTeam), cs = CB.filter(p => p.team === defTeam), name = defTeam === "PIT" ? "Steelers" : "Saints";
-    let h = `<h2>${title}</h2><p class="sub">${t("vs_corners", { t: name })} · ${objLabel(objectiveKey())}</p>`;
+    let h = `<h2>${logo(offTeam, "h-logo")}${title}</h2><p class="sub">${t("vs_corners", { t: name })} · ${objLabel(objectiveKey())}</p>`;
     for (const w of ws) {
       h += `<div class="wr-block"><div class="wr-head"><b>${esc(w.name)}</b><span>WR · ${esc(w.team)} · ${esc(t("arch")[w.archetype])}${w.forty ? " · " + t("forty") + " " + num(w.forty, 2) + " s" : ""}${w.tier === "limited" ? " · " + t("limited") : ""}</span></div>
         <div class="eyebrow" style="margin:6px 0">${t("attack_with")}</div>${rankList(rankItems(w, cs, true), t("cap_target"))}
@@ -803,7 +823,7 @@ function renderHome() {
       kb: t("key_assign_b", { w: esc(w.name), v: fmtObj(d.key, d.val), r: pct(d.rate) }) });
   }
   $("evKeys").innerHTML = keys.map((k, i) => `<div class="ev-key ${k.team}" data-w="${k.w.nflId}" data-c="${k.c.nflId}" role="button" tabindex="0">
-    <span class="kn">${i + 1}</span><div class="kt">${k.kt}</div><div class="kh">${esc(k.kh)}</div><div class="kb">${k.kb}</div></div>`).join("");
+    <span class="kn">${i + 1}</span><div class="kt">${logo(k.team.toUpperCase())}${k.kt}</div><div class="kh">${esc(k.kh)}</div><div class="kb">${k.kb}</div></div>`).join("");
 }
 
 // ======================= Game plan board =======================
@@ -815,10 +835,10 @@ function renderPlan() {
   const ws = WR.filter(p => state.off === "ALL" || p.team === state.off), cs = CB.filter(p => state.def === "ALL" || p.team === state.def);
   if (!ws.length || !cs.length) { $("boardWrap").innerHTML = `<div class="empty">${t("no_players")}</div>`; $("attackList").innerHTML = $("assignList").innerHTML = ""; return; }
   const key = objectiveKey();
-  let h = `<table class="board"><thead><tr><th></th>${cs.map(c => `<th scope="col">${esc(c.name)}<br><small>${esc(c.team)}${c.tier === "limited" ? " · " + t("limited") : ""}</small></th>`).join("")}</tr></thead><tbody>`;
+  let h = `<table class="board"><thead><tr><th></th>${cs.map(c => `<th scope="col">${logo(c.team)}<br>${esc(c.name)}<br><small>${esc(c.team)}${c.tier === "limited" ? " · " + t("limited") : ""}</small></th>`).join("")}</tr></thead><tbody>`;
   for (const w of ws) {
     const evals = cs.map(c => evaluate(w, c)), bestIdx = evals.reduce((bi, r, i) => r.best > evals[bi].best ? i : bi, 0);
-    h += `<tr><th scope="row">${esc(w.name)} <small>${esc(w.team)}</small></th>`;
+    h += `<tr><th scope="row">${logo(w.team)}${esc(w.name)} <small>${esc(w.team)}</small></th>`;
     evals.forEach((r, i) => {
       const diff = r.cut[key] - r.go[key], scaled = key === "yds" ? diff / 25 : diff;
       h += `<td data-w="${w.nflId}" data-c="${cs[i].nflId}" class="${i === bestIdx && cs.length > 1 ? "pick" : ""}" style="background:${cellColor(scaled)}"><b>${r.call === "cut" ? "CUT" : "GO"}</b><span>${fmtObj(key, r.best)} · ${pct(Math.max(r.shareCut, 1 - r.shareCut))}</span></td>`;
