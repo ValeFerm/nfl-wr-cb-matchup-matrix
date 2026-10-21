@@ -40,14 +40,17 @@
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif;
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; transition: background .25s ease;
   font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
 .wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
 h1, h2, h3 { font-family: Oswald, "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .02em; }
 a { color: inherit; }
 
 /* ---------- Top bar ---------- */
-.topbar { background: var(--band); color: var(--band-ink); position: sticky; top: 0; z-index: 30; border-bottom: 3px solid var(--flag); }
+.topbar { background: linear-gradient(90deg, #0a1520 0%, var(--band) 55%, #13263b 100%); color: var(--band-ink); position: sticky; top: 0; z-index: 30;
+  border-bottom: 3px solid var(--flag); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+body.is-event .topbar { background: linear-gradient(90deg, #07090d, #141a25 60%, #07090d); border-bottom-color: #b8963e; }
+body.is-event nav.pages a.on { border-bottom-color: #e6c66f; color: #f3d98b; }
 .topbar .wrap { display: flex; align-items: center; gap: 14px; min-height: 56px; flex-wrap: wrap; }
 .brand { font: 700 18px/1 Oswald, sans-serif; text-transform: uppercase; letter-spacing: .03em; text-decoration: none; white-space: nowrap; }
 .brand span { color: var(--flag); }
@@ -66,10 +69,19 @@ nav.pages a.on { color: var(--band-ink); border-bottom-color: var(--band-ink); }
 .page { display: none; padding: 26px 0 40px; }
 .page.on { display: block; }
 .ph { margin-bottom: 16px; }
+.ph { position: relative; padding: 22px 24px 20px; border-radius: 16px; margin-bottom: 18px; overflow: hidden;
+  background: linear-gradient(120deg, color-mix(in oklab, var(--band) 92%, transparent), color-mix(in oklab, var(--band) 75%, var(--cut) 25%)); color: var(--band-ink); }
+.ph::before { content: ""; position: absolute; inset: 0; opacity: .08; pointer-events: none; background: repeating-linear-gradient(90deg, #fff 0 2px, transparent 2px 56px); }
+.ph::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--flag); }
+.ph > * { position: relative; }
+.ph .eyebrow { color: var(--band-ink-2); }
+.ph p { color: var(--band-ink-2) !important; }
 .ph h1 { font-size: clamp(28px, 4.5vw, 44px); line-height: 1.02; margin: 4px 0 6px; font-weight: 700; }
 .ph p { color: var(--ink-2); margin: 0; max-width: 860px; }
 .eyebrow { font: 600 12px/1.2 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.rk, .board td, .ev-key, .dot { transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease; }
+.rk:hover { transform: translateX(2px); }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 16px; }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 200px; max-width: 320px; }
 .field.sm { flex: 0 1 130px; }
@@ -110,6 +122,68 @@ select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid
 .wr-head b { font: 700 18px Oswald, sans-serif; text-transform: uppercase; }
 .wr-head span { color: var(--ink-3); font-size: 12.5px; }
 .small-note { font-size: 12px; color: var(--ink-3); margin-top: 12px; }
+
+/* ---------- Event page : NFL Paris Game (noir & or, nuit au Stade de France) ---------- */
+body.is-event { background: #07090d; }
+body.is-event footer { color: #8c8572; }
+.event { --surface: #0f131b; --surface-2: #161b25; --ink: #f3efe6; --ink-2: #c9c2b0; --ink-3: #8c8572; --line: #262c38; --line-2: #3a4150;
+  --good: #d3bc8d; --neutral: #232a36; --shadow: 0 10px 40px rgba(0,0,0,.45); color: var(--ink); padding-top: 18px; }
+.event .card { border-color: rgba(211,188,141,.18); }
+.ev-hero { position: relative; overflow: hidden; border-radius: 18px; padding: 34px 28px 44px; margin-bottom: 26px; min-height: 360px;
+  background:
+    radial-gradient(60% 55% at 12% -10%, rgba(255,236,170,.30), transparent 60%),
+    radial-gradient(55% 50% at 88% -12%, rgba(255,236,170,.26), transparent 60%),
+    radial-gradient(90% 70% at 50% 120%, rgba(211,188,141,.18), transparent 70%),
+    linear-gradient(180deg, #0c111b 0%, #07090d 100%);
+  border: 1px solid rgba(211,188,141,.28); box-shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,236,170,.12); }
+.ev-hero::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 72px); }
+.ev-hero::after { content: ""; position: absolute; left: -10%; right: -10%; bottom: -60px; height: 140px; pointer-events: none;
+  background: radial-gradient(50% 100% at 50% 100%, rgba(47,107,52,.55), transparent 70%); }
+.ev-eiffel { position: absolute; right: 3%; bottom: 0; height: 92%; opacity: .22; filter: drop-shadow(0 0 18px rgba(243,217,139,.35)); }
+.ev-inner { position: relative; z-index: 1; }
+.ev-ticket { display: inline-flex; flex-wrap: wrap; gap: 0; border: 1px solid rgba(211,188,141,.45); border-radius: 8px; overflow: hidden;
+  font: 600 12px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #e9d9ae; }
+.ev-ticket span { padding: 9px 12px; border-right: 1px dashed rgba(211,188,141,.45); }
+.ev-ticket span:first-child { background: linear-gradient(135deg, #f3d98b, #b8963e); color: #0a0c11; font-weight: 700; }
+.ev-ticket span:last-child { border-right: 0; }
+.ev-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; margin: 26px 0 18px; max-width: 900px; }
+.ev-team { display: flex; flex-direction: column; gap: 4px; }
+.ev-team.pit { align-items: flex-end; text-align: right; }
+.ev-abbr { font: 700 clamp(64px, 11vw, 132px)/.85 Oswald, sans-serif; letter-spacing: .02em;
+  background: linear-gradient(180deg, #fff6d8 0%, #e6c66f 45%, #9b7a2c 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 40px rgba(243,217,139,.18); }
+.ev-team.pit .ev-abbr { background: linear-gradient(180deg, #fff3c4 0%, #ffb612 50%, #b37a00 100%); -webkit-background-clip: text; background-clip: text; }
+.ev-name { font: 600 clamp(15px, 2vw, 20px)/1.1 Oswald, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: #f3efe6; }
+.ev-name b { color: #e6c66f; } .ev-team.pit .ev-name b { color: #ffb612; }
+.ev-tag { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #8c8572; }
+.ev-vs { text-align: center; }
+.ev-vs-txt { font: 700 22px/1 Oswald, sans-serif; letter-spacing: .2em; color: #e9d9ae; margin-top: 10px; }
+.ev-count { display: inline-block; font: 700 15px/1 Oswald, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #0a0c11;
+  background: linear-gradient(135deg, #f3d98b, #b8963e); padding: 9px 14px; border-radius: 999px; box-shadow: 0 0 24px rgba(243,217,139,.35); }
+.ev-lede { max-width: 640px; color: #c9c2b0; margin: 0; font-size: 15.5px; }
+.ev-lede b { color: #f3efe6; }
+.ev-tricolor { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; display: flex; z-index: 1; }
+.ev-tricolor i { flex: 1; } .ev-tricolor i:nth-child(1) { background: #0055a4; } .ev-tricolor i:nth-child(2) { background: #fff; } .ev-tricolor i:nth-child(3) { background: #ef4135; }
+.ev-h2 { font: 700 22px/1 Oswald, sans-serif; letter-spacing: .12em; color: #e9d9ae; margin: 0 0 12px; display: flex; align-items: center; gap: 12px; }
+.ev-h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(211,188,141,.5), transparent); }
+.ev-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+.ev-key { position: relative; padding: 16px 16px 14px; border-radius: 12px; background: linear-gradient(160deg, #141a25, #0c1017);
+  border: 1px solid rgba(211,188,141,.22); cursor: pointer; transition: transform .15s ease, border-color .15s ease; }
+.ev-key:hover { transform: translateY(-2px); border-color: rgba(243,217,139,.6); }
+.ev-key .kn { font: 700 40px/1 Oswald, sans-serif; color: rgba(211,188,141,.22); position: absolute; right: 12px; top: 8px; }
+.ev-key .kt { font: 600 11px/1.2 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #e6c66f; }
+.ev-key.pit .kt { color: #ffb612; }
+.ev-key .kh { font: 700 19px/1.15 Oswald, sans-serif; text-transform: uppercase; margin: 8px 0 6px; color: #f3efe6; }
+.ev-key .kb { font-size: 13px; color: #c9c2b0; }
+.ev-key .kb b { color: #f3efe6; }
+.ev-side { position: relative; overflow: hidden; }
+.ev-side::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, #e6c66f, #9b7a2c); }
+.ev-side.pit::before { background: linear-gradient(90deg, #ffb612, #b37a00); }
+.ev-side h2 { color: #f3efe6; }
+.event .situation .tag { background: linear-gradient(135deg, #f3d98b, #b8963e); color: #0a0c11; }
+.event select { background: #161b25; color: #f3efe6; border-color: #3a4150; }
+.event .pill.cut { background: #2a78d6; } .event .pill.go { background: #eb6834; }
 
 /* ---------- Ranked decision lists ---------- */
 .rank { display: flex; flex-direction: column; gap: 6px; }
@@ -231,7 +305,11 @@ footer { padding: 10px 0 40px; color: var(--ink-3); font-size: 13px; }
   .verdict { grid-column: 1 / -1; order: -1; }
   .scatters, .grid2, .duo { grid-template-columns: 1fr; }
 }
+@media (max-width: 1020px) { .ev-keys { grid-template-columns: 1fr 1fr; } .ev-eiffel { opacity: .12; } }
 @media (max-width: 680px) {
+  .ev-keys { grid-template-columns: 1fr; }
+  .ev-score { gap: 8px; } .ev-hero { padding: 24px 16px 36px; }
+  .ev-ticket span { padding: 7px 8px; letter-spacing: .08em; }
   .lab, .tiles, .expect { grid-template-columns: 1fr; }
   .field, .field.sm { max-width: none; flex: 1 1 140px; }
   .situation .sum { margin-left: 0; max-width: none; }
@@ -257,18 +335,38 @@ footer { padding: 10px 0 40px; color: var(--ink-3); font-size: 13px; }
 </header>
 
 <main class="wrap">
-  <!-- ============ HOME ============ -->
-  <section class="page" id="page-home">
-    <div class="hero">
-      <div class="eyebrow" data-i18n="home_eyebrow"></div>
-      <h1><span class="no">Saints</span> vs <span class="pit">Steelers</span> · Paris</h1>
-      <p data-i18n-html="home_lede"></p>
-      <div class="chips" id="chips"></div>
+  <!-- ============ HOME : NFL PARIS GAME (page évènement) ============ -->
+  <section class="page event" id="page-home">
+    <div class="ev-hero">
+      <svg class="ev-eiffel" viewBox="0 0 200 400" aria-hidden="true">
+        <defs><linearGradient id="evGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d98b"/><stop offset="1" stop-color="#8a6d2b"/></linearGradient></defs>
+        <rect x="98" y="0" width="4" height="34" fill="url(#evGold)"/>
+        <path d="M92 34 H108 L116 122 H84 Z" fill="url(#evGold)"/>
+        <rect x="76" y="122" width="48" height="8" rx="1" fill="url(#evGold)"/>
+        <path d="M82 130 H118 L136 232 H64 Z" fill="url(#evGold)"/>
+        <rect x="52" y="232" width="96" height="10" rx="1" fill="url(#evGold)"/>
+        <path d="M60 242 H140 L180 400 H140 Q100 300 60 400 H20 Z" fill="url(#evGold)"/>
+        <g stroke="#0a0c11" stroke-opacity=".55" stroke-width="1.2" fill="none">
+          <path d="M86 60 L114 100 M114 60 L86 100 M70 150 L130 210 M130 150 L70 210 M50 270 L95 330 M150 270 L105 330"/>
+        </g>
+      </svg>
+      <div class="ev-inner">
+        <div class="ev-ticket"><span data-i18n="ev_game"></span><span data-i18n="ev_week"></span><span data-i18n="ev_date"></span><span>Stade de France · Saint-Denis</span></div>
+        <div class="ev-score">
+          <div class="ev-team no"><div class="ev-abbr">NO</div><div class="ev-name">New Orleans <b>Saints</b></div><div class="ev-tag" data-i18n="ev_home"></div></div>
+          <div class="ev-vs"><div class="ev-count" id="evCount"></div><div class="ev-vs-txt">⚜ VS ⚜</div></div>
+          <div class="ev-team pit"><div class="ev-abbr">PIT</div><div class="ev-name">Pittsburgh <b>Steelers</b></div><div class="ev-tag" data-i18n="ev_away"></div></div>
+        </div>
+        <p class="ev-lede" data-i18n-html="ev_lede"></p>
+      </div>
+      <div class="ev-tricolor" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
+    <h2 class="ev-h2" data-i18n="ev_keys"></h2>
+    <div class="ev-keys" id="evKeys"></div>
     <div class="card situation" data-sit></div>
     <div class="duo">
-      <div class="card side" id="homeNO"></div>
-      <div class="card side" id="homePIT"></div>
+      <div class="card side ev-side no" id="homeNO"></div>
+      <div class="card side ev-side pit" id="homePIT"></div>
     </div>
     <p class="small-note" data-i18n="home_note"></p>
   </section>
@@ -348,10 +446,16 @@ const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { ret
 // ======================= i18n =======================
 const I18N = {
   en: {
+    ev_game: "NFL Paris Game", ev_week: "Week 7", ev_date: "Sun. Oct 25, 2026", ev_home: "Designated home team", ev_away: "Visitors",
+    ev_lede: "The <b>first regular-season NFL game ever played in France</b>. Black &amp; gold against black &amp; gold under the Stade de France lights: here is how each staff should attack, and defend, the receiver–corner duels.",
+    ev_keys: "Keys to the game", ev_days: "{n} days to kickoff", ev_day1: "Kickoff tomorrow", ev_today: "Game day", ev_past: "Played Oct 25, 2026",
+    key_off: "{t} offense", key_def: "{t} defense", key_attack: "Attack {c}", key_assign: "{c} shadows {w}",
+    key_attack_b: "<b>{w}</b> runs <b>{call}</b> routes at him: {v} · best target in <b>{r}</b> of simulations.",
+    key_assign_b: "Allows {v} on <b>{w}</b> · best assignment in <b>{r}</b> of simulations.",
     nav_home: "Paris 2026", nav_lab: "Matchup Lab", nav_plan: "Game Plan", nav_land: "Player Landscape", nav_proof: "Does it win?", nav_method: "Method",
     home_eyebrow: "NFL Big Data Bowl · Paris Side Quest · Man-coverage decision tool",
     home_lede: "Who should the offense attack, with which routes, and who should the defense put on whom? Every number below is a <b>probability</b> computed from Next Gen Stats tracking for the <b>situation you set</b>.",
-    home_note: "Players and teams as of 2021 Weeks 1–8 (the tracking data provided). Rosters change: the method, not the names, is what carries to 2026. Click any row to open the duel in the Matchup Lab.",
+    home_note: "Players and teams as of 2021 Weeks 1–8 (the tracking data provided). Rosters change: the method, not the names, is what carries to 2026. Click a key or a row to open the duel in the Matchup Lab.",
     no_off: "Saints offense", pit_off: "Steelers offense", vs_corners: "vs the {t} corners", attack_with: "Who to attack, and how",
     assign_title: "{t} defense: who shadows him?", lab_eyebrow: "One receiver · one corner · one call",
     lab_sub: "Set the situation, pick a receiver and a corner: the call, its probability of success and how confident the model is update instantly.",
@@ -361,7 +465,7 @@ const I18N = {
     method_eyebrow: "How it works · assumptions · limits",
     wr: "Wide receiver", cb: "Cornerback (in man)", random: "↻ Random matchup", your_off: "Your offense", opp_def: "Opponent defense",
     sit: "Situation", down: "Down", togo: "Yards to go", ball: "Ball on", objective: "Optimize", obj_auto: "Auto", obj_cmp: "Completion %", obj_conv: "1st-down %", obj_yds: "Expected yards",
-    own: "own", opp: "opp.", sum_auto: "On {d} down the tool maximizes <b>{o}</b>.", sum_manual: "The tool maximizes <b>{o}</b>.",
+    own: "Own", opp: "Opp", sum_auto: "On {d} down the tool maximizes <b>{o}</b>.", sum_manual: "The tool maximizes <b>{o}</b>.",
     downs: ["1st", "2nd", "3rd", "4th"],
     call_cut: "Break it off", call_go: "Go vertical", routes_cut: "outs, comebacks, digs, slants, curls", routes_go: "go / fade, seam, deep post stem",
     the_call: "The call", split_cap: "Share of {b} simulations (games resampled, model refit) in which each call is the better one",
@@ -413,10 +517,16 @@ const I18N = {
     theme_light: "Light", theme_dark: "Dark"
   },
   fr: {
-    nav_home: "Paris 2026", nav_lab: "Labo de duel", nav_plan: "Plan de match", nav_land: "Panorama joueurs", nav_proof: "Ça gagne ?", nav_method: "Méthode",
+    ev_game: "NFL Paris Game", ev_week: "Semaine 7", ev_date: "Dim. 25 octobre 2026", ev_home: "Équipe recevante", ev_away: "Visiteurs",
+    ev_lede: "Le <b>premier match NFL de saison régulière disputé en France</b>. Noir et or contre noir et or sous les projecteurs du Stade de France : voici comment chaque staff doit attaquer, et défendre, les duels receveur–cornerback.",
+    ev_keys: "Les clés du match", ev_days: "J-{n} avant le coup d'envoi", ev_day1: "Coup d'envoi demain", ev_today: "Jour de match", ev_past: "Joué le 25 octobre 2026",
+    key_off: "Attaque des {t}", key_def: "Défense des {t}", key_attack: "Viser {c}", key_assign: "{c} sur {w}",
+    key_attack_b: "<b>{w}</b> l'attaque en <b>{call}</b> : {v} · meilleure cible dans <b>{r}</b> des simulations.",
+    key_assign_b: "Concède {v} face à <b>{w}</b> · meilleure affectation dans <b>{r}</b> des simulations.",
+    nav_home: "Paris 2026", nav_lab: "Labo des duels", nav_plan: "Plan de match", nav_land: "Panorama joueurs", nav_proof: "La preuve", nav_method: "Méthode",
     home_eyebrow: "NFL Big Data Bowl · Paris Side Quest · Outil de décision en man coverage",
     home_lede: "Qui l'attaque doit-elle viser, avec quels tracés, et qui la défense doit-elle mettre sur qui ? Chaque chiffre ci-dessous est une <b>probabilité</b> calculée à partir du tracking Next Gen Stats pour la <b>situation choisie</b>.",
-    home_note: "Joueurs et équipes de 2021, semaines 1 à 8 (données de tracking fournies). Les effectifs changent : c'est la méthode, pas les noms, qui vaut pour 2026. Cliquez sur une ligne pour ouvrir le duel dans le labo.",
+    home_note: "Joueurs et équipes de 2021, semaines 1 à 8 (données de tracking fournies). Les effectifs changent : c'est la méthode, pas les noms, qui vaut pour 2026. Cliquez sur une clé ou une ligne pour ouvrir le duel dans le labo.",
     no_off: "Attaque des Saints", pit_off: "Attaque des Steelers", vs_corners: "face aux corners des {t}", attack_with: "Qui attaquer, et comment",
     assign_title: "Défense des {t} : qui le prend en man ?", lab_eyebrow: "Un receveur · un corner · un appel",
     lab_sub: "Réglez la situation, choisissez un receveur et un corner : l'appel, sa probabilité de réussite et la confiance du modèle se mettent à jour instantanément.",
@@ -425,42 +535,42 @@ const I18N = {
     proof_eyebrow: "Validation", proof_sub: "Les métriques ne comptent que si elles se transforment en réceptions. Chaque passe a été reliée à son receveur visé (texte du play-by-play).",
     method_eyebrow: "Fonctionnement · hypothèses · limites",
     wr: "Receveur (WR)", cb: "Cornerback (en man)", random: "↻ Duel au hasard", your_off: "Votre attaque", opp_def: "Défense adverse",
-    sit: "Situation", down: "Tentative", togo: "Yards à gagner", ball: "Ballon sur", objective: "Optimiser", obj_auto: "Auto", obj_cmp: "% de complétion", obj_conv: "% de 1er down", obj_yds: "Yards attendus",
-    own: "propres", opp: "adv.", sum_auto: "En {d} tentative, l'outil maximise <b>{o}</b>.", sum_manual: "L'outil maximise <b>{o}</b>.",
-    downs: ["1re", "2e", "3e", "4e"],
-    call_cut: "Casser le tracé", call_go: "Partir profond", routes_cut: "outs, comebacks, digs, slants, curls", routes_go: "go / fade, seam, post profond",
+    sit: "Situation", down: "Down", togo: "Yards à gagner", ball: "Ballon sur", objective: "Optimiser", obj_auto: "Auto", obj_cmp: "% de complétion", obj_conv: "Conversion 1er down", obj_yds: "Yards attendus",
+    own: "Nos", opp: "Leurs", sum_auto: "Sur {d} down, l'outil maximise <b>{o}</b>.", sum_manual: "L'outil maximise <b>{o}</b>.",
+    downs: ["1er", "2e", "3e", "4e"],
+    call_cut: "Tracés à cassure", call_go: "Attaque verticale", routes_cut: "outs, comebacks, digs, slants, curls", routes_go: "go / fade, seam, post profond",
     the_call: "L'appel", split_cap: "Part des {b} simulations (matchs rééchantillonnés, modèle réajusté) où chaque appel est le meilleur",
-    row_cmp: "Probabilité de complétion", row_conv: "Probabilité de 1er down", row_yds: "Yards attendus", row_int: "Risque d'INT (ligue, man)", row_metric: "Burst attendu (yd) · Burn (yd/s)",
+    row_cmp: "Probabilité de complétion", row_conv: "Probabilité de conversion", row_yds: "Yards attendus", row_int: "Risque d'interception (ligue, man)", row_metric: "Burst attendu (yd) · Burn (yd/s)",
     col_cut: "CUT", col_go: "GO", conf: ["Indécis", "Léger avantage", "Confiant", "Très net"],
-    why_cut: "{w} contre {c} : les tracés cassés sont le meilleur appel dans {p} % des simulations pour cette situation.", why_go: "{w} contre {c} : les tracés verticaux sont le meilleur appel dans {p} % des simulations pour cette situation.",
-    burst: "Burst", burn: "Burn", wins_break: "gagne à la rupture", wins_speed: "gagne en vitesse", break_cov: "Couverture des cuts", deep_cov: "Couverture profonde",
-    mirrors: "suit les ruptures", carries: "tient la vitesse", per_break: "yd par rupture (brut)", cuts: "cuts", verts: "verticaux", gained_cb: "yd/s gagnés sur le CB (brut)",
+    why_cut: "{w} contre {c} : les tracés à cassure sont le meilleur appel dans {p} % des simulations pour cette situation.", why_go: "{w} contre {c} : les tracés verticaux sont le meilleur appel dans {p} % des simulations pour cette situation.",
+    burst: "Burst", burn: "Burn", wins_break: "gagne sur la cassure", wins_speed: "gagne en vitesse pure", break_cov: "Couverture sur cassure", deep_cov: "Couverture profonde",
+    mirrors: "colle aux cassures", carries: "tient la profondeur", per_break: "yd par cassure (brut)", cuts: "cuts", verts: "verticaux", gained_cb: "yd/s gagnés sur le CB (brut)",
     allows: "concède", allows_dn: "yd/s vers l'avant (brut)", faced: "subis", forty: "40 yd", combine: "Combine", no_forty: "40 yd : non chronométré au Combine",
-    tree: "Arbre de tracés en man", tree_sub: "snap → lancer · jaune = ligne à atteindre", br_routes: "Tracés cassés", vert_routes: "Verticaux",
-    limited: "échantillon limité", how_attack: "Comment l'attaquer :", atk_cut: "le faire changer de direction : tracés cassés au sommet, double moves après la rupture.",
-    atk_go: "le mettre sous pression verticale : go, seams, tiges profondes avant la rupture.",
+    tree: "Route tree en man", tree_sub: "du snap au lancer · ligne jaune = 1er down", br_routes: "Tracés à cassure", vert_routes: "Verticaux",
+    limited: "échantillon limité", how_attack: "Comment l'attaquer :", atk_cut: "le faire changer de direction : tracés à cassure (out, comeback, dig), double moves.",
+    atk_go: "le faire reculer : go, fade, seam, longues phases verticales avant la cassure.",
     grades_note: "Notes en percentiles parmi les {n} corners affichés (plus haut = couverture plus serrée).",
-    leg_go: "Appeler du vertical (GO)", leg_cut: "Appeler des tracés cassés (CUT)", leg_pick: "· case = appel, valeur de réussite · % des simulations qui soutiennent l'appel · cadre vert = corner à attaquer",
-    att_title: "Attaque : quel corner attaquer", att_sub: "Pour chacun de vos receveurs, les corners adverses classés par probabilité de réussite, avec le % de simulations où chacun est la meilleure cible.",
-    def_title: "Défense : qui suit qui", def_sub: "Côté défense : pour chaque receveur adverse, vos corners classés par réussite concédée (plus bas = mieux), avec le % de simulations où chacun est la meilleure affectation.",
+    leg_go: "Appeler du vertical (GO)", leg_cut: "Appeler des tracés à cassure (CUT)", leg_pick: "· case = appel, valeur de réussite · % des simulations qui soutiennent l'appel · cadre vert = corner à attaquer",
+    att_title: "Attaque : quel corner viser", att_sub: "Pour chacun de vos receveurs, les corners adverses classés par probabilité de réussite, avec le % de simulations où chacun est la meilleure cible.",
+    def_title: "Défense : qui couvre qui", def_sub: "Côté défense : pour chaque receveur adverse, vos corners classés par réussite concédée (plus bas = mieux), avec le % de simulations où chacun est la meilleure affectation.",
     cap_target: "Cible", cap_call: "Appel · valeur", cap_best_long: "Meilleur choix dans % des simulations", cap_assign: "Affecter",
     no_players: "Aucun joueur profilé pour cette sélection.", all: "Tous",
-    sc_wr: "Receveurs · comment ils gagnent", sc_wr_sub: "Haut = gagne à la rupture · Droite = gagne en vitesse", sc_cb: "Corners · où ils cèdent", sc_cb_sub: "Haut = battu sur les ruptures · Droite = battu en profondeur",
-    q_wr: ["TECHNICIENS DU TRACÉ", "MENACES COMPLÈTES", "DÉPENDANTS DU SCHÉMA", "SPÉCIALISTES VITESSE"], q_cb: ["RAIDE SUR LES RUPTURES", "EXPLOITABLE PARTOUT", "VERROU", "MANQUE DE VITESSE"],
-    ax_wr_x: "Burn · gagne en vitesse (z) →", ax_wr_y: "Burst · gagne à la rupture (z) →", ax_cb_x: "Burn concédé · battu en profondeur (z) →", ax_cb_y: "Burst concédé · battu sur les ruptures (z) →",
+    sc_wr: "Receveurs · comment ils gagnent", sc_wr_sub: "Haut = gagne sur la cassure · Droite = gagne en vitesse pure", sc_cb: "Corners · où ils cèdent", sc_cb_sub: "Haut = battu sur les cassures · Droite = battu en profondeur",
+    q_wr: ["TECHNICIENS DES TRACÉS", "RECEVEURS COMPLETS", "DÉPENDANTS DU SCHÉMA", "MENACES PROFONDES"], q_cb: ["HANCHES RAIDES", "VULNÉRABLES PARTOUT", "SHUTDOWN CORNERS", "MANQUE DE VITESSE"],
+    ax_wr_x: "Burn · gagne en vitesse pure (z) →", ax_wr_y: "Burst · gagne sur la cassure (z) →", ax_cb_x: "Burn concédé · battu en profondeur (z) →", ax_cb_y: "Burst concédé · battu sur les cassures (z) →",
     click_load: "cliquer pour charger", inside: "← intérieur", outside: "extérieur →", yrs: "ans",
-    t1: "Complétion sur les <b>tracés cassés</b> ciblés quand le WR gagne sa rupture, contre quand il la perd.", t2: "Complétion sur les <b>verticaux</b> ciblés quand le WR déborde le corner, contre quand il n'y arrive pas.",
-    t3: "Complétion avec <b>moins d'1 yd</b> de séparation au lancer, contre <b>3 yd et plus</b>.", split_med_b: "Coupure à la médiane du Burst", split_med_n: "Coupure à la médiane du Burn",
+    t1: "Complétion sur les <b>tracés à cassure</b> ciblés quand le WR gagne sa cassure, contre quand il la perd.", t2: "Complétion sur les <b>verticaux</b> ciblés quand le WR déborde le corner, contre quand il n'y arrive pas.",
+    t3: "Complétion avec <b>moins d'1 yd</b> de séparation au lancer, contre <b>3 yd et plus</b>.", split_med_b: "Séparation à la médiane du Burst", split_med_n: "Séparation à la médiane du Burn",
     targets: "cibles", not_sig: "(non significatif : simple tendance)", t3_foot: "n = {n} routes cut + verticales ciblées",
     sep_title: "Séparation au lancer → complétion", sep_sub: "Routes cut et verticales ciblées en man coverage, selon la distance WR–CB au moment où le ballon quitte la main du QB.",
     skill_title: "Talent ou hasard ?", skill_sub: "Test hors échantillon : les profils ajustés sur les matchs impairs prédisent toutes les routes des matchs pairs (et inversement).",
     oos: "R² hors échantillon vs moyenne ligue", skill_txt: "Une route isolée est bruitée (mauvaise tige, pick, safety au-dessus) : quelques pourcents de variance expliquée au niveau route, c'est un signal modeste mais réel. Savoir <b>qui</b> court la route et <b>qui</b> la couvre bat la moyenne ligue sur des matchs jamais vus. C'est exactement cette incertitude qu'expriment les pourcentages de simulation.",
-    arch: { "Route technician": "Technicien du tracé", "Speed burner": "Spécialiste de la vitesse", "Complete threat": "Menace complète", "Scheme-dependent": "Dépendant du schéma",
-      "Stiff on breaks": "Raide sur les ruptures", "Lacks long speed": "Manque de vitesse", "Exploitable both ways": "Exploitable partout", "Lockdown": "Verrou" },
-    note: { "Route technician": "crée son espace à la rupture : sec, soudain, difficile à suivre.", "Speed burner": "gagne en dépassant le corner : il mange le coussin et passe au-dessus.",
+    arch: { "Route technician": "Technicien des tracés", "Speed burner": "Menace profonde", "Complete threat": "Receveur complet", "Scheme-dependent": "Dépendant du schéma",
+      "Stiff on breaks": "Hanches raides", "Lacks long speed": "Manque de vitesse de pointe", "Exploitable both ways": "Vulnérable partout", "Lockdown": "Shutdown corner" },
+    note: { "Route technician": "crée son espace sur la cassure : sec, soudain, difficile à suivre.", "Speed burner": "gagne en débordant le corner : il efface le cushion et passe dans son dos.",
       "Complete threat": "bat la man coverage à la rupture comme en ligne droite.", "Scheme-dependent": "gagne rarement son duel seul : à libérer par le schéma (motion, stacks, picks).",
-      "Stiff on breaks": "cède de l'espace quand le receveur casse son tracé, mais tient la vitesse en profondeur.", "Lacks long speed": "suit bien les ruptures mais se fait déborder sur les verticaux.",
-      "Exploitable both ways": "cède de la séparation à la rupture et en profondeur.", "Lockdown": "tient face aux ruptures comme à la vitesse : visez quelqu'un d'autre." },
+      "Stiff on breaks": "a les hanches raides : il cède de l'espace sur les cassures, mais tient la profondeur.", "Lacks long speed": "colle aux cassures mais se fait déborder en profondeur.",
+      "Exploitable both ways": "cède de la séparation sur les cassures comme en profondeur.", "Lockdown": "tient face aux cassures comme à la vitesse : ciblez quelqu'un d'autre." },
     chips: ["matchs", "dropbacks en man coverage", "duels WR–CB suivis", "WR", "CB"],
     method: [
       "<b>Man coverage uniquement</b> (PFF : Cover-0, Cover-1, 2-Man). La zone fausse les distances sans vrai duel individuel.",
@@ -660,9 +770,6 @@ function rankItems(w, cbs, maximize) {  // attaque : corner à viser (max) ; dé
     .sort((a, b) => maximize ? b.val - a.val : a.val - b.val);
 }
 function renderHome() {
-  const M = D.meta;
-  $("chips").innerHTML = [[M.games, 0], [M.man_plays.toLocaleString(LANG === "fr" ? "fr-FR" : "en-US"), 1], [M.duels.toLocaleString(LANG === "fr" ? "fr-FR" : "en-US"), 2], [M.n_wr_web, 3], [M.n_cb_web, 4]]
-    .map(([v, i]) => `<span class="chip"><b>${esc(v)}</b> ${t("chips")[i]}</span>`).join("");
   const side = (offTeam, defTeam, title) => {
     const ws = WR.filter(p => p.team === offTeam), cs = CB.filter(p => p.team === defTeam), name = defTeam === "PIT" ? "Steelers" : "Saints";
     let h = `<h2>${title}</h2><p class="sub">${t("vs_corners", { t: name })} · ${objLabel(objectiveKey())}</p>`;
@@ -675,6 +782,22 @@ function renderHome() {
   };
   $("homeNO").innerHTML = side("NO", "PIT", t("no_off"));
   $("homePIT").innerHTML = side("PIT", "NO", t("pit_off"));
+  // Compte à rebours (jours calendaires jusqu'au dimanche 25 octobre 2026)
+  const now = new Date(), kick = new Date(2026, 9, 25), days = Math.round((kick - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 864e5);
+  $("evCount").textContent = days > 1 ? t("ev_days", { n: days }) : days === 1 ? t("ev_day1") : days === 0 ? t("ev_today") : t("ev_past");
+  // Les clés du match : meilleure cible pour chaque attaque, meilleure affectation pour chaque défense
+  const keys = [];
+  for (const [off, def, offName, defName] of [["NO", "PIT", "Saints", "Steelers"], ["PIT", "NO", "Steelers", "Saints"]]) {
+    const w = WR.filter(p => p.team === off)[0], cs = CB.filter(p => p.team === def);
+    if (!w || !cs.length) continue;
+    const a = rankItems(w, cs, true)[0], d = rankItems(w, cs, false)[0];
+    keys.push({ team: off.toLowerCase(), kt: t("key_off", { t: offName }), kh: t("key_attack", { c: a.c.name }), w, c: a.c,
+      kb: t("key_attack_b", { w: esc(w.name), call: a.call === "cut" ? "CUT" : "GO", v: fmtObj(a.key, a.val) + " " + objLabel(a.key).toLowerCase(), r: pct(a.rate) }) });
+    keys.push({ team: def.toLowerCase(), kt: t("key_def", { t: defName }), kh: t("key_assign", { c: d.c.name, w: w.name }), w, c: d.c,
+      kb: t("key_assign_b", { w: esc(w.name), v: fmtObj(d.key, d.val), r: pct(d.rate) }) });
+  }
+  $("evKeys").innerHTML = keys.map((k, i) => `<div class="ev-key ${k.team}" data-w="${k.w.nflId}" data-c="${k.c.nflId}" role="button" tabindex="0">
+    <span class="kn">${i + 1}</span><div class="kt">${k.kt}</div><div class="kh">${esc(k.kh)}</div><div class="kb">${k.kb}</div></div>`).join("");
 }
 
 // ======================= Game plan board =======================
@@ -714,7 +837,7 @@ $("selDef").addEventListener("change", e => { state.def = e.target.value; render
 // ======================= Lab =======================
 function fillPlayers() {
   const opt = arr => [...new Set(arr.map(p => p.team))].map(tm => `<optgroup label="${tm}">${arr.filter(p => p.team === tm)
-    .map(p => `<option value="${p.nflId}">${esc(p.name)}${p.tier === "limited" ? " *" : ""}</option>`).join("")}</optgroup>`).join("");
+    .map(p => `<option value="${p.nflId}">${esc(p.name)}${p.tier === "limited" ? " · " + t("limited") : ""}</option>`).join("")}</optgroup>`).join("");
   $("selWR").innerHTML = opt(WR); $("selCB").innerHTML = opt(CB);
 }
 function renderLab() {
@@ -726,8 +849,8 @@ $("selWR").addEventListener("change", e => { state.wr = +e.target.value; renderL
 $("selCB").addEventListener("change", e => { state.cb = +e.target.value; renderLab(); renderScatters(); });
 $("btnSwap").addEventListener("click", () => { state.wr = WR[Math.floor(Math.random() * WR.length)].nflId; state.cb = CB[Math.floor(Math.random() * CB.length)].nflId; renderLab(); renderScatters(); });
 function openLab(wId, cId) { state.wr = wId; state.cb = cId; renderLab(); renderScatters(); location.hash = "#lab"; scrollTo(0, 0); }
-document.addEventListener("click", e => { const el = e.target.closest(".rk, .board td"); if (el && el.dataset.w) openLab(+el.dataset.w, +el.dataset.c); });
-document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.classList && e.target.classList.contains("rk")) openLab(+e.target.dataset.w, +e.target.dataset.c); });
+document.addEventListener("click", e => { const el = e.target.closest(".rk, .board td, .ev-key"); if (el && el.dataset.w) openLab(+el.dataset.w, +el.dataset.c); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.w) openLab(+e.target.dataset.w, +e.target.dataset.c); });
 
 // ======================= Scatter plots =======================
 function scatter(el, arr, sel, isWR) {
@@ -829,6 +952,7 @@ function route() {
   const valid = ["home", "lab", "plan", "landscape", "proof", "method"].includes(page) ? page : "home";
   document.querySelectorAll(".page").forEach(p => p.classList.toggle("on", p.id === "page-" + valid));
   document.querySelectorAll("nav.pages a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + valid));
+  document.body.classList.toggle("is-event", valid === "home");
 }
 addEventListener("hashchange", () => { route(); scrollTo(0, 0); });
 function renderAll() {
