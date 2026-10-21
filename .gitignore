@@ -1,0 +1,14 @@
+# Données brutes (repo public source) et caches
+data/
+cache/
+*.parquet
+
+# Environnement
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# Markdown internes (consignes, notes) : seul le README est publié
+*.md
+!README.md
