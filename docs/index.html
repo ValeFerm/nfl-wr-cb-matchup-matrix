@@ -263,6 +263,10 @@ body.is-event footer { color: #8c8572; }
 .split div { color: #fff; padding: 0 10px; white-space: nowrap; transition: width .35s ease; min-width: 0; overflow: hidden; }
 .split .c { background: var(--cut); } .split .g { background: var(--go); text-align: right; }
 .split-cap { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+.lean { background: var(--surface-2); border-radius: 10px; padding: 12px; }
+.lean-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+.lean-row .pill { padding: 6px 8px; }
+.lean-txt { font-size: 13px; color: var(--ink); font-weight: 600; }
 table.cmp { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .cmp th, .cmp td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: right; }
 .cmp th:first-child, .cmp td:first-child { text-align: left; color: var(--ink-2); font-weight: 500; }
@@ -492,6 +496,8 @@ const I18N = {
     proof_eyebrow: "Validation", proof_sub: "The metrics only matter if they turn into catches. Each throw was matched to its intended receiver (play-by-play text).",
     method_eyebrow: "How it works · assumptions · limits",
     wr: "Wide receiver", cb: "Cornerback (in man)", random: "↻ Random matchup", your_off: "Your offense", opp_def: "Opponent defense",
+    lean_title: "Matchup effect vs an average duel (same situation)", lean_cut: "This matchup tilts toward CUT ({p} of simulations)", lean_go: "This matchup tilts toward GO ({p} of simulations)",
+    lean_cap: "The situation sets the baseline (league-wide, breaking routes complete ~55% vs ~40% for verticals); this line isolates what this receiver and this corner add on top of it.",
     obj_success: "Success rate", row_success: "Success rate (gain ≥ {p}% of distance = {n} yd)",
     sit: "Situation", down: "Down", togo: "Yards to go", ball: "Ball on", objective: "Optimize", obj_auto: "Auto", obj_cmp: "Completion %", obj_conv: "1st-down %", obj_yds: "Expected yards",
     own: "Own", opp: "Opp", sum_auto: "On {d} down the tool maximizes <b>{o}</b> (success = 40% of the distance on 1st down, 60% on 2nd, 100% on 3rd/4th).", sum_manual: "The tool maximizes <b>{o}</b>.",
@@ -564,6 +570,8 @@ const I18N = {
     proof_eyebrow: "Validation", proof_sub: "Les métriques ne comptent que si elles se transforment en réceptions. Chaque passe a été reliée à son receveur visé (texte du play-by-play).",
     method_eyebrow: "Fonctionnement · hypothèses · limites",
     wr: "Receveur (WR)", cb: "Cornerback (en man)", random: "↻ Duel au hasard", your_off: "Votre attaque", opp_def: "Défense adverse",
+    lean_title: "Effet du duel par rapport à un duel moyen (même situation)", lean_cut: "Ce duel fait pencher vers CUT ({p} des simulations)", lean_go: "Ce duel fait pencher vers GO ({p} des simulations)",
+    lean_cap: "La situation fixe la base (à l'échelle de la ligue, un tracé à cassure est complété ~55 % du temps contre ~40 % pour un vertical) ; cette ligne isole ce que ce receveur et ce corner ajoutent par-dessus.",
     obj_success: "Taux de réussite", row_success: "Taux de réussite (gain ≥ {p} % de la distance = {n} yd)",
     sit: "Situation", down: "Down", togo: "Yards à gagner", ball: "Ballon sur", objective: "Optimiser", obj_auto: "Auto", obj_cmp: "% de complétion", obj_conv: "Conversion 1er down", obj_yds: "Yards attendus",
     own: "Nos", opp: "Leurs", sum_auto: "Sur {d} down, l'outil maximise <b>{o}</b> (réussite = 40 % de la distance en 1er down, 60 % en 2e, 100 % en 3e/4e).", sum_manual: "L'outil maximise <b>{o}</b>.",
@@ -666,6 +674,16 @@ function evaluate(w, c) {
   let cutWins = 0;
   for (let b = 0; b < B; b++) { const v = drawVal(w, c, b, key); if (v.cut > v.go) cutWins++; }
   res.shareCut = cutWins / B;
+  // Effet du duel : ce que CE receveur face à CE corner change par rapport à un duel moyen, à situation égale
+  const base = { cut: outcome("cut", mu.cut, ys.cut)[key], go: outcome("go", mu.go, ys.go)[key] };
+  res.dCut = res.cut[key] - base.cut; res.dGo = res.go[key] - base.go;
+  let leanCut = 0;
+  for (let b = 0; b < B; b++) {
+    const yb = yardTable().draws[b], v = drawVal(w, c, b, key);
+    const bc = outcome("cut", mu.cut, yb.cut, b)[key], bg = outcome("go", mu.go, yb.go, b)[key];
+    if (v.cut - bc > v.go - bg) leanCut++;
+  }
+  res.leanShare = leanCut / B;
   res.call = res.cut[key] >= res.go[key] ? "cut" : "go";
   res.best = res[res.call][key];
   const conf = Math.max(res.shareCut, 1 - res.shareCut);
@@ -682,6 +700,7 @@ function pickRates(w, cbs, maximize) {
   }
   return wins.map(x => x / B);
 }
+const fmtDelta = (key, v) => key === "yds" ? (v >= 0 ? "+" : "−") + num(Math.abs(v), 1) + " yd" : (v >= 0 ? "+" : "−") + num(Math.abs(v) * 100, 1) + " pts";
 const fmtObj = (key, v) => key === "yds" ? num(v, 1) + " yd" : pct(v);
 const objLabel = key => key === "conv" && state.down <= 2 ? t("obj_success") : t({ cmp: "obj_cmp", conv: "obj_conv", yds: "obj_yds" }[key]);
 const convRowLabel = () => state.down <= 2 ? t("row_success", { p: Math.round(SUCCESS[state.down] * 100), n: needYards() }) : t("row_conv");
@@ -789,6 +808,10 @@ function renderVerdict(w, c) {
       <tr><td>${t("row_int")}</td><td>${pct(SIT.cut.int_rate)}</td><td>${pct(SIT.vertical.int_rate)}</td></tr>
       <tr><td>${t("row_metric")}</td><td>${sgn(r.mC)}</td><td>${num(r.mG, 2)}</td></tr>
     </tbody></table>
+    <div class="lean"><div class="eyebrow">${t("lean_title")}</div>
+      <div class="lean-row"><span class="pill cut">CUT ${fmtDelta(key, r.dCut)}</span><span class="pill go">GO ${fmtDelta(key, r.dGo)}</span>
+      <span class="lean-txt">${t(r.leanShare >= 0.5 ? "lean_cut" : "lean_go", { p: pct(r.leanShare >= 0.5 ? r.leanShare : 1 - r.leanShare) })}</span></div>
+      <div class="split-cap">${t("lean_cap")}</div></div>
     <p class="scout-note">${t(go ? "why_go" : "why_cut", { w: esc(w.name), c: esc(c.name), p: Math.round((go ? 1 - r.shareCut : r.shareCut) * 100) })}</p>`;
 }
 
