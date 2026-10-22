@@ -29,16 +29,17 @@ def load_meta():
 
 
 def build_roster(plays, pff, players, sample=None, seed=0):
-    """Actions en man + tous les coureurs de route (WR/TE/RB) et tous les défenseurs en couverture.
+    """Actions en man + tous les coureurs de route (WR/TE/RB), tous les défenseurs en couverture et le passeur.
 
     Les TE/RB servent uniquement à l'assignation des duels (un CB peut suivre un TE) ; l'analyse garde les WR.
+    Le QB (« Q ») ne sert qu'au simulateur du site (position réelle au moment du lancer).
     """
     man = plays[plays["pff_passCoverageType"] == "Man"]
     if sample:
         man = man.sample(sample, random_state=seed)
     roster = pff.merge(man[["gameId", "playId"]]).merge(players[["nflId", "officialPosition"]])
-    roster = roster[roster["pff_role"].isin(["Pass Route", "Coverage"])]
-    roster = roster.assign(side=np.where(roster["pff_role"] == "Pass Route", "O", "D"))
+    roster = roster[roster["pff_role"].isin(["Pass Route", "Coverage", "Pass"])]
+    roster = roster.assign(side=roster["pff_role"].map({"Pass Route": "O", "Coverage": "D", "Pass": "Q"}))
     return man, roster[["gameId", "playId", "nflId", "side", "officialPosition"]]
 
 

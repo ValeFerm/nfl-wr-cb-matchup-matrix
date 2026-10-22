@@ -89,7 +89,8 @@ def route_features(duel):
     pre = df[df["t"] <= df["t_throw"]].copy()
     pre["dlead"] = pre.groupby(ROUTE, sort=False)["x"].diff() - pre.groupby(ROUTE, sort=False)["x_db"].diff()
     lin = pre[(pre["d_dir"] < LIN_MAX_DEG) & (pre["s"] >= LIN_MIN_SPEED) & (pre["t"] >= RELEASE_FRAMES)]
-    burn = lin.groupby(ROUTE).agg(lin_frames=("dlead", "size"), lin_gain=("dlead", "sum")).reset_index()
+    burn = lin.groupby(ROUTE).agg(lin_frames=("dlead", "size"), lin_gain=("dlead", "sum"),
+                                  lin0=("t", "min"), lin1=("t", "max")).reset_index()
     burn = burn[burn["lin_frames"] >= LIN_MIN_FRAMES]
     burn["burn"] = burn["lin_gain"] / (burn["lin_frames"] / FPS)
 
@@ -97,7 +98,7 @@ def route_features(duel):
     at_throw = pre.loc[pre["t"] == pre["t_throw"], ROUTE + ["nflId_db", "sep", "depth", "y"]].rename(
         columns={"sep": "sep_throw", "depth": "depth_throw"}).join(start, on=ROUTE)
     at_throw["axis_angle"] = np.degrees(np.arctan2(np.abs(at_throw["y"] - at_throw["y_snap"]), at_throw["depth_throw"]))
-    routes = (at_throw.merge(cuts, on=ROUTE, how="left").merge(burn[ROUTE + ["burn"]], on=ROUTE, how="left"))
+    routes = at_throw.merge(cuts, on=ROUTE, how="left").merge(burn[ROUTE + ["burn", "lin0", "lin1"]], on=ROUTE, how="left")
     routes["family"] = np.select(
         [routes["t_cut"].notna(),
          (routes["depth_throw"] >= VERTICAL_DEPTH) & (routes["axis_angle"] <= VERTICAL_MAX_ANGLE)], ["cut", "vertical"], "other")

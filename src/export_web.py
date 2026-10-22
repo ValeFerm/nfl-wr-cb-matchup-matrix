@@ -54,7 +54,7 @@ def _with_draws(records, draws, side):
     return records
 
 
-def export(path, wr, cb, routes, frames, fit_info, validation, meta, draws, completion, situation, forty):
+def export(path, wr, cb, routes, frames, fit_info, validation, meta, draws, completion, situation, forty, depths):
     wr, cb = wr.merge(forty, on="nflId", how="left"), cb.merge(forty, on="nflId", how="left")
     raw = {fam: routes[routes["family"] == fam] for fam in ("cut", "vertical")}
     for df, who in ((wr, "nflId"), (cb, "nflId_db")):
@@ -66,8 +66,8 @@ def export(path, wr, cb, routes, frames, fit_info, validation, meta, draws, comp
         "validation": validation,
         "completion": completion,
         "situation": situation,
-        "wr": _with_draws(_players(wr, ["Complete threat", "Route technician", "Speed burner", "Scheme-dependent"]),
-                          draws, 0),
+        "wr": [dict(r, cd=depths.get(r["nflId"], {"c": [], "v": []})) for r in
+               _with_draws(_players(wr, ["Complete threat", "Route technician", "Speed burner", "Scheme-dependent"]), draws, 0)],
         "cb": _with_draws(_players(cb, ["Exploitable both ways", "Stiff on breaks", "Lacks long speed", "Lockdown"]),
                           draws, 1),
         "paths": _route_paths(frames, routes, set(wr["nflId"])),

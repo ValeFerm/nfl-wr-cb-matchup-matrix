@@ -8,6 +8,7 @@
 <link rel="icon" type="image/png" href="assets/logos/NFL.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="wristcoach.css">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
   // Thème avant le premier rendu (évite le flash)
@@ -463,6 +464,7 @@ footer { padding: 10px 0 40px; color: var(--ink-3); font-size: 13px; }
 <div id="tip" role="tooltip"></div>
 
 <script src="data.js"></script>
+<script src="wristcoach.js"></script>
 <script>
 "use strict";
 const D = window.DATA, FIT = D.fit, CMP = D.completion, SIT = D.situation, B = D.meta.n_boot;
@@ -543,8 +545,9 @@ const I18N = {
       "<b>Cut</b> = direction of travel turns ≥ 40° and the body turns ≥ 25° within 0.8 s, at ≥ 2 yd/s, ≥ 2 yd past the line, the whole window ending <i>before</i> the throw. <b>Burst</b> = change in WR–CB distance over that window.",
       "<b>Vertical</b> = no cut, ≥ 7 yd deep at the throw, within 30° of straight downfield. <b>Burn</b> = yards per second the WR gains on the CB downfield while running straight at ≥ 5 yd/s.",
       "<b>Opponent-adjusted profiles</b>: ridge regression route = league mean + WR effect + CB effect, penalty chosen by cross-validation across games. Players need ≥ 8 cut + vertical reps (≥ 3 of each); smaller samples are automatically shrunk harder toward the league average. Built to project forward: the model is judged only on games it has not seen, and the pipeline is season-agnostic, so refitting it on 2021–2022 tracking projects the 2023 matchups.",
-      "<b>Success probability</b>: a logistic model on targeted routes links Burst (cuts) and Burn (verticals) to completion, averaged over rep-to-rep noise around the matchup's expected value. Success rate (gain ≥ 40% / 60% / 100% of the distance on 1st / 2nd / 3rd–4th down, i.e. the 1st-down probability on 3rd and 4th) and expected yards add the league distribution of yards after a completed cut or vertical in man coverage, capped by the distance to the goal line.",
+      "<b>Success probability</b>: a logistic model on targeted routes links Burst (cuts) and Burn (verticals) to completion, averaged over rep-to-rep noise around the matchup's expected value. Success rate (gain ≥ 40% / 60% / 100% of the distance on 1st / 2nd / 3rd–4th down, i.e. the 1st-down probability on 3rd and 4th) and expected yards add the league distribution of yards after a completed cut or vertical in man coverage, truncated at the depth where this receiver actually catches the ball on his real routes and capped by the distance to the goal line.",
       "<b>Simulation percentages</b>: games are resampled with replacement and the whole model refit {b} times. \"CUT 72%\" means breaking routes are the better call in 72% of those simulations; \"best in 64%\" means that corner is the best target (or assignment) in 64% of them.",
+      "<b>Route generator (wrist coach)</b>: the call is drawn with the lab's probability (CUT 75% = CUT on 3 snaps out of 4: Thompson sampling), the receiver's separation for this duel is drawn from the model, one of his real routes from the tracking is replayed with the corner recalibrated to produce exactly that separation, and the result (completion, interception, gain) is drawn from the same models as the lab. Checked on thousands of simulated snaps: every frequency matches the lab within sampling noise. Tracking stops ~0.3 s after the throw, so the ball flight and the rest of the play are projected.",
       "<b>40-yard dash</b>: NFL Combine times from nflverse (public data), matched by name and college. Shown for context, not used by the model.",
       "<b>Limits</b>: 8 weeks of data, 2021 rosters, geometric route families (no route labels in the data), targets parsed from play-by-play text, league-wide yard distributions (not player-specific)."
     ],
@@ -617,8 +620,9 @@ const I18N = {
       "<b>Cut</b> = la direction tourne de ≥ 40° et le corps de ≥ 25° en 0,8 s, à ≥ 2 yd/s, ≥ 2 yd au-delà de la ligne, fenêtre terminée <i>avant</i> le lancer. <b>Burst</b> = variation de la distance WR–CB sur cette fenêtre.",
       "<b>Vertical</b> = pas de cut, ≥ 7 yd de profondeur au lancer, à moins de 30° de l'axe. <b>Burn</b> = yards par seconde gagnés vers l'avant sur le CB en ligne droite à ≥ 5 yd/s.",
       "<b>Profils ajustés à l'adversaire</b> : régression ridge route = moyenne ligue + effet WR + effet CB, pénalité choisie par validation croisée sur les matchs. Il faut ≥ 8 tracés cut + vertical (≥ 3 de chaque) ; les petits échantillons sont automatiquement plus ramenés vers la moyenne ligue. Pensé pour anticiper : le modèle n'est jugé que sur des matchs qu'il n'a pas vus, et le pipeline ne dépend pas de la saison ; réajusté sur le tracking 2021–2022, il projette les duels de 2023.",
-      "<b>Probabilité de réussite</b> : un modèle logistique sur les routes ciblées relie le Burst (cuts) et le Burn (verticaux) à la complétion, moyenné sur le bruit d'une répétition à l'autre. Le taux de réussite (gain ≥ 40 % / 60 % / 100 % de la distance en 1er / 2e / 3e–4e down, soit la probabilité de 1er down en 3e et 4e) et les yards attendus ajoutent la distribution ligue des yards après une réception sur cut ou vertical en man, plafonnée par la distance à l'en-but.",
+      "<b>Probabilité de réussite</b> : un modèle logistique sur les routes ciblées relie le Burst (cuts) et le Burn (verticaux) à la complétion, moyenné sur le bruit d'une répétition à l'autre. Le taux de réussite (gain ≥ 40 % / 60 % / 100 % de la distance en 1er / 2e / 3e–4e down, soit la probabilité de 1er down en 3e et 4e) et les yards attendus ajoutent la distribution ligue des yards après une réception sur cut ou vertical en man, tronquée à la profondeur où ce receveur reçoit réellement le ballon sur ses vrais tracés et plafonnée par la distance à l'en-but.",
       "<b>Pourcentages de simulation</b> : les matchs sont rééchantillonnés avec remise et tout le modèle réajusté {b} fois. « CUT 72 % » signifie que les tracés cassés sont le meilleur appel dans 72 % de ces simulations ; « meilleur dans 64 % » signifie que ce corner est la meilleure cible (ou affectation) dans 64 % d'entre elles.",
+      "<b>Générateur de tracés (wrist coach)</b> : l'appel est tiré avec la probabilité du labo (CUT 75 % = CUT sur 3 snaps sur 4 : Thompson sampling), la séparation du receveur pour ce duel est tirée dans le modèle, un de ses vrais tracés issus du tracking est rejoué avec le corner recalibré pour produire exactement cette séparation, et le résultat (complétion, interception, gain) est tiré dans les mêmes modèles que le labo. Vérifié sur des milliers de snaps simulés : chaque fréquence correspond au labo, aux fluctuations d'échantillonnage près. Le tracking s'arrête ~0,3 s après le lancer : le vol du ballon et la suite de l'action sont projetés.",
       "<b>40 yards</b> : temps du Combine NFL issus de nflverse (données publiques), appariés par nom et université. Affichés pour le contexte, non utilisés par le modèle.",
       "<b>Limites</b> : 8 semaines de données, effectifs 2021, familles de tracés géométriques (pas d'étiquettes de route dans les données), cibles extraites du texte du play-by-play, distributions de yards à l'échelle de la ligue (pas par joueur)."
     ],
@@ -647,39 +651,50 @@ const objectiveKey = () => state.objective !== "auto" ? state.objective : "conv"
 // Yards par famille (ligue, man) : P(gain ≥ yards à gagner | complétée) et E[min(gain, distance à l'en-but)]
 const SUCCESS = { 1: 0.4, 2: 0.6, 3: 1, 4: 1 };  // définition standard du taux de réussite selon le down
 const needYards = () => Math.min(Math.ceil(state.togo * SUCCESS[state.down]), state.toGoal);
-function yardStatsOf(ys) {
-  const need = needYards();
-  return { conv: ys.filter(y => y >= need).length / ys.length, eyds: ys.reduce((a, y) => a + Math.min(y, state.toGoal), 0) / ys.length };
+// Yards après réception (ligue, man), tronqués à la profondeur où CE receveur reçoit réellement le ballon sur chacune de
+// ses répétitions (mélange à poids égaux) : un receveur qui ne court que des tracés de 10 yd ne fait pas de gain de 3 yd.
+// Sans profondeurs (duel « moyen »), distribution ligue complète.
+function yardStatsOf(ys, depths) {
+  const need = needYards(), goal = state.toGoal;
+  if (!depths || !depths.length) return { conv: ys.filter(y => Math.min(y, goal) >= need).length / ys.length, eyds: ys.reduce((a, y) => a + Math.min(y, goal), 0) / ys.length };
+  let conv = 0, eyds = 0;
+  for (const d of depths) {
+    let n = 0, nc = 0, sy = 0;
+    for (const y of ys) if (y >= d - 0.5) { const g = Math.min(y, goal); n++; sy += g; if (g >= need) nc++; }
+    if (n) { conv += nc / n; eyds += sy / n; } else { const g = Math.min(Math.round(d), goal); conv += g >= need ? 1 : 0; eyds += g; }
+  }
+  return { conv: conv / depths.length, eyds: eyds / depths.length };
 }
-const ysCache = {};  // par situation : estimation + chaque tirage bootstrap (yards rééchantillonnés)
-function yardTable() {
-  const k = state.down + "|" + state.togo + "|" + state.toGoal;
+const ysCache = {};  // par receveur et par situation : estimation + chaque tirage bootstrap (yards rééchantillonnés)
+function yardTable(w) {
+  const k = (w ? w.nflId : "league") + "|" + state.down + "|" + state.togo + "|" + state.toGoal, dc = w && w.cd ? w.cd.c : null, dv = w && w.cd ? w.cd.v : null;
   if (!ysCache[k]) ysCache[k] = {
-    est: { cut: yardStatsOf(SIT.cut.yards), go: yardStatsOf(SIT.vertical.yards) },
-    draws: Array.from({ length: B }, (_, b) => ({ cut: yardStatsOf(SIT.draws.yards.cut[b]), go: yardStatsOf(SIT.draws.yards.vertical[b]) }))
+    est: { cut: yardStatsOf(SIT.cut.yards, dc), go: yardStatsOf(SIT.vertical.yards, dv) },
+    draws: Array.from({ length: B }, (_, b) => ({ cut: yardStatsOf(SIT.draws.yards.cut[b], dc), go: yardStatsOf(SIT.draws.yards.vertical[b], dv) }))
   };
   return ysCache[k];
 }
 function outcome(fam, metric, ys, b) { const p = pComplete(fam, metric, b); return { cmp: p, conv: p * ys.conv, yds: p * ys.eyds }; }
 const mu = { cut: FIT.burst.mu, go: FIT.burn.mu };
 function drawVal(w, c, b, key) {  // valeur de l'objectif pour chaque appel, tirage bootstrap b (profils + modèles de résultat)
-  const ys = yardTable().draws[b];
+  const ys = yardTable(w).draws[b];
   return { cut: outcome("cut", mu.cut + w.draws.burst[b] + c.draws.burst[b], ys.cut, b)[key],
            go: outcome("go", mu.go + w.draws.burn[b] + c.draws.burn[b], ys.go, b)[key] };
 }
 function evaluate(w, c) {
-  const ys = yardTable().est, key = objectiveKey();
+  const ys = yardTable(w).est, key = objectiveKey();
   const mC = mu.cut + w.burst + c.burst, mG = mu.go + w.burn + c.burn;
   const res = { cut: outcome("cut", mC, ys.cut), go: outcome("go", mG, ys.go), mC, mG, key };
   let cutWins = 0;
   for (let b = 0; b < B; b++) { const v = drawVal(w, c, b, key); if (v.cut > v.go) cutWins++; }
   res.shareCut = cutWins / B;
   // Effet du duel : ce que CE receveur face à CE corner change par rapport à un duel moyen, à situation égale
-  const base = { cut: outcome("cut", mu.cut, ys.cut)[key], go: outcome("go", mu.go, ys.go)[key] };
+  const yl = yardTable(w).est;  // duel moyen : séparations moyennes (WR et CB de ligue), mêmes profondeurs de tracé
+  const base = { cut: outcome("cut", mu.cut, yl.cut)[key], go: outcome("go", mu.go, yl.go)[key] };
   res.dCut = res.cut[key] - base.cut; res.dGo = res.go[key] - base.go;
   let leanCut = 0;
   for (let b = 0; b < B; b++) {
-    const yb = yardTable().draws[b], v = drawVal(w, c, b, key);
+    const yb = yardTable(w).draws[b], v = drawVal(w, c, b, key);
     const bc = outcome("cut", mu.cut, yb.cut, b)[key], bg = outcome("go", mu.go, yb.go, b)[key];
     if (v.cut - bc > v.go - bg) leanCut++;
   }
@@ -812,6 +827,7 @@ function renderVerdict(w, c) {
       <div class="lean-row"><span class="pill cut">CUT ${fmtDelta(key, r.dCut)}</span><span class="pill go">GO ${fmtDelta(key, r.dGo)}</span>
       <span class="lean-txt">${t(r.leanShare >= 0.5 ? "lean_cut" : "lean_go", { p: pct(r.leanShare >= 0.5 ? r.leanShare : 1 - r.leanShare) })}</span></div>
       <div class="split-cap">${t("lean_cap")}</div></div>
+    ${WristCoach.button()}
     <p class="scout-note">${t(go ? "why_go" : "why_cut", { w: esc(w.name), c: esc(c.name), p: Math.round((go ? 1 - r.shareCut : r.shareCut) * 100) })}</p>`;
 }
 

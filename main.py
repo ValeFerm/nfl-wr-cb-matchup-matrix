@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 from decision import bootstrap_effects, bootstrap_outcomes, completion_model, forty_times, situation_data  # noqa: E402
 from export_web import export  # noqa: E402
+from sim_export import export_sim  # noqa: E402
 from load import ROOT, get_tracking, load_meta, player_teams  # noqa: E402
 from metrics import assign_matchups, route_features  # noqa: E402
 from scoring import LIMITED, eligible, matchup_matrix, player_effects, split_half_reliability  # noqa: E402
@@ -76,9 +77,12 @@ def main(sample=None):
     print(f"Web: {len(wr_web)} WR, {len(cb_web)} CB | completion model {completion}")
     meta = {"man_plays": len(man), "duels": n_duels, "families": fam, "n_wr": len(wr), "n_cb": len(cb),
             "n_wr_web": len(wr_web), "n_cb_web": len(cb_web), "games": int(trk["gameId"].nunique()), "n_boot": len(draws["burst"][0])}
+    # Simulateur : répétitions réelles (sim.js) + profondeur de réception de chacune (intégrée au modèle du labo)
+    n_reps, depths = export_sim(ROOT / "docs" / "sim.js", frames, routes, trk, set(wr_web["nflId"]))
+    print(f"Simulator: {n_reps} real reps exported")
     export(ROOT / "docs" / "data.js", wr_web, cb_web, routes, frames, fit_info, validation, meta, draws, completion,
-           situation, forty_times(players))
-    print(f"Done in {time.time() - t0:.1f}s -> {out} and docs/data.js")
+           situation, forty_times(players), depths)
+    print(f"Done in {time.time() - t0:.1f}s -> {out}, docs/data.js and docs/sim.js")
 
 
 if __name__ == "__main__":
