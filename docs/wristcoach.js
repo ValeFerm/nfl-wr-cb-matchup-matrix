@@ -46,7 +46,7 @@ const WristCoach = (() => {
   const fr = () => typeof LANG !== "undefined" && LANG === "fr";
   const nf = (v, d = 1) => fr() ? v.toFixed(d).replace(".", ",") : v.toFixed(d);
   const pc = v => Math.round(v * 100) + (fr() ? " %" : "%");
-  const sg = (v, d = 1) => (v >= 0 ? "+" : "−") + nf(Math.abs(v), d);
+  const sg = (v, d = 1) => { const r = Number(v.toFixed(d)); return (r > 0 ? "+" : r < 0 ? "−" : "") + nf(Math.abs(r), d); };  // pas de « −0,00 »
   const NS = "http://www.w3.org/2000/svg";
   const el = (tag, attrs = {}, parent) => {
     const e = document.createElementNS(NS, tag);
