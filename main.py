@@ -7,6 +7,7 @@ import sys
 import time
 from pathlib import Path
 
+
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 from decision import bootstrap_effects, bootstrap_outcomes, completion_model, forty_times, situation_data  # noqa: E402
